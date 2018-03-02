@@ -517,7 +517,11 @@ def get_candidate_components(sv, dims, Yres_buf, min_num_trial=3, gSig=(5, 5),
 
     for i in range(min_num_trial):
         if use_peak_max:
-            ij = local_maxima[i]
+            if len(local_maxima) > i:
+                ij = local_maxima[i]
+            else:
+                continue
+
         else:
             ind = np.argmax(sv)
             ij = np.unravel_index(ind, dims, order='C')
@@ -550,7 +554,7 @@ def get_candidate_components(sv, dims, Yres_buf, min_num_trial=3, gSig=(5, 5),
             compute_corr = True  # determine when to compute corr coef
 
         na = ain.dot(ain)
-        sv[indeces_] /= 2  # 0
+        sv[indeces_] /= 1  # 0
         if na:
             ain /= sqrt(na)
             Ain.append(ain)
@@ -558,7 +562,6 @@ def get_candidate_components(sv, dims, Yres_buf, min_num_trial=3, gSig=(5, 5),
             idx.append(ind)
             if sniper_mode:
                 Ain_cnn.append(ain_cnn)
-
 
     if sniper_mode & (len(Ain_cnn) > 0):
         Ain_cnn = np.stack(Ain_cnn)
@@ -579,7 +582,7 @@ def get_candidate_components(sv, dims, Yres_buf, min_num_trial=3, gSig=(5, 5),
         cnn_pos = Ain2[discard]
     else:
         keep_cnn = []  # list(range(len(Ain_cnn)))
-        dictions = []
+        predictions = []
 
     if compute_corr:
         keep_corr = []
@@ -634,14 +637,13 @@ def update_num_components(t, sv, Ab, Cf, Yres_buf, Y_buf, rho_buf,
     M = np.shape(Ab)[-1]
     N = M - gnb                 # number of coponents (without background)
 
-    first = True
 
     sv -= rho_buf.get_first()
     # update variance of residual buffer
     sv += rho_buf.get_last_frames(1).squeeze()
     sv = np.maximum(sv,0)
 
-    Ains, Cins, Cins_res, inds, ijsig_all, cnn_pos, local_max, prds = get_candidate_components(sv,dims,Yres_buf,min_num_trial, gSig,
+    Ains, Cins, Cins_res, inds, ijsig_all, cnn_pos, local_max, prds = get_candidate_components(sv,dims,Yres_buf,
                                                           min_num_trial=min_num_trial, gSig=gSig,
                                                           gHalf=gHalf,sniper_mode=sniper_mode, rval_thr=rval_thr, patch_size=50,
                                                           loaded_model=loaded_model, thresh_CNN_noisy=thresh_CNN_noisy)

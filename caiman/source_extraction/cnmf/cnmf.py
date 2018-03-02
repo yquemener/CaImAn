@@ -816,12 +816,13 @@ class CNMF(object):
             loaded_model = None
             sniper_mode = False
         else:
-            import keras
+
             from keras.models import model_from_json
             path = path_to_model.split(".")[:-1]
             json_path = ".".join(path + ["json"])
             model_path = ".".join(path + ["h5"])
             try:
+                import keras
                 json_file = open(json_path, 'r')
                 loaded_model_json = json_file.read()
                 json_file.close()
@@ -831,9 +832,7 @@ class CNMF(object):
                 loaded_model.compile(loss=keras.losses.categorical_crossentropy,
                               optimizer=opt, metrics=['accuracy'])
             except:
-                print('No model found')
-                loaded_model = None
-                sniper_mode = False
+                raise Exception('No model found, set sniper_mode to false')
 
         self.loaded_model = loaded_model
         self.sniper_mode = sniper_mode
