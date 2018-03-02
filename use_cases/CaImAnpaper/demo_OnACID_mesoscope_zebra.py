@@ -160,7 +160,7 @@ cnm_init = bare_initialization(Y[:initbatch].transpose(1, 2, 0), init_batch=init
                                update_num_comps=True, rval_thr=rval_thr,
                                thresh_fitness_raw=thresh_fitness_raw,
                                batch_update_suff_stat=True, max_comp_update_shape=max_comp_update_shape,
-                               deconv_flag=False, use_dense=True,
+                               deconv_flag=False, use_dense=False,
                                simultaneously=False, n_refit=0)
 
 #%% Plot initialization results
@@ -373,7 +373,7 @@ cv2.destroyAllWindows()
 save_results = True
 
 if save_results:
-    np.savez('results_analysis_online_Plane17_mc_nodivide_sv.npz',
+    np.savez('results_analysis_online_Plane17_mc.npz',
              Cn=Cn, Ab=cnm2.Ab, Cf=cnm2.C_on, b=cnm2.b, f=cnm2.f,
              dims=cnm2.dims, tottime=tottime, noisyC=cnm2.noisyC, shifts=shifts)
 
