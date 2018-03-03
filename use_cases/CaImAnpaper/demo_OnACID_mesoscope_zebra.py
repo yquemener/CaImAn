@@ -73,7 +73,7 @@ ploton = False
 #K = 100
 #min_num_trial = 60
 #
-fls = ['/mnt/ceph/neuro/zebra/05292014Fish1-4/images/mmap_tifs/Plane17_mc.hdf5']
+fls = ['/mnt/ceph/neuro/zebra/05292014Fish1-4/images/mmap_tifs/Plane17.stack.hdf5']
 K = 500
 min_num_trial = 100
 # your list of files should look something like this
@@ -112,7 +112,7 @@ gnb = 3
 # recompute gSig if downsampling is involved
 gSig = tuple((np.array(gSig) / ds_factor))#.astype('int'))
 # flag for online motion correction
-mot_corr = False
+mot_corr = True
 # maximum allowed shift during motion correction
 max_shift = np.ceil(10. / ds_factor).astype('int')
 
