@@ -273,9 +273,10 @@ cnn_pos = []
 # flag for plotting contours of detected components at the end of each file
 plot_contours_flag = False
 # flag for showing video with results online (turn off flags for improving speed)
-play_reconstr = False
+play_reconstr = True
 # flag for saving movie (file could be quite large..)
-save_movie = False
+save_movie = True
+folder_name = '.'
 if save_movie:
     movie_name = os.path.join(folder_name, 'output.avi')  # name of movie to be saved
 resize_fact = 1.2                        # image resizing factor
