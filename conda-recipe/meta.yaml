@@ -27,7 +27,8 @@ requirements:
     - setuptools
     - cython
     - pip
-    - numpy
+    - bqplot
+    - numpy 1.13
     - ipykernel >=4.8.2
     - ipython
     - jupyter
@@ -51,7 +52,6 @@ requirements:
     - tornado 4.5
 #    - opencv 3.2
     - pandas
-    - bqplot
     - ffmpeg
     - av
     - qgrid
@@ -60,7 +60,6 @@ requirements:
     - traittypes
     - hdf5
     - typing
-    - appmode
     #- nb_conda_kernels >=2.1.0
 
 
@@ -76,7 +75,7 @@ always_include_files:
 app:
   #entry: jupyter-notebook                         [not osx]
   #entry: ${PREFIX}/bin/jupyter-notebook ${PREFIX}/bin/nb_interface/caiman_interface.ipynb
-  entry: ${PREFIX}/bin/jupyter-notebook --NotebookApp.default_url="/apps/${PREFIX}/bin/nb_interface/caiman_interface.ipynb"
+  entry: ${PREFIX}/bin/jupyter-notebook --notebook-dir="${PREFIX}/bin/nb_interface" --NotebookApp.default_url="/apps/caiman_interface.ipynb"
   #entry: open ${PREFIX}/bin/jupyter_mac.command   [osx]
   #entry: jupyter notebook ${SRC_DIR}/caiman/notebook_interface/caiman_interface.ipynb   [osx]
   summary: Calcium Imaging Analysis (CaImAn)

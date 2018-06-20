@@ -1,5 +1,6 @@
 pip install opencv-python
 conda install -c conda-forge nb_conda_kernels -y
+conda install -c conda-forge appmode -y
 
 pip install -e .
 

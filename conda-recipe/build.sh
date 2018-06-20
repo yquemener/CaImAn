@@ -12,6 +12,7 @@ echo "---------------- Running build.sh ----------------"
 #$PYTHON setup.py build_ext -i
 yes | pip install opencv-python
 conda install -c conda-forge nb_conda_kernels -y
+conda install -c conda-forge appmode -y
 #conda upgrade notebook -y
 pip install -e .
 
