@@ -11,6 +11,8 @@ A Computational toolbox for large scale **Ca**lcium **Im**aging data **An**alysi
 
 Recent advances in calcium imaging acquisition techniques are creating datasets of the order of Terabytes/week. Memory and computationally efficient algorithms are required to analyze in reasonable amount of time terabytes of data. This project implements a set of essential methods required in the calcium imaging movies analysis pipeline. Fast and scalable algorithms are implemented for motion correction, movie manipulation, and source and spike extraction. CaImAn also contains some routines for the analyisis of behavior from video cameras. In summary, CaImAn provides a general purpose tool to handle large movies, with special emphasis on tools for two-photon and one-photon calcium imaging and behavioral datasets. 
 
+## Companion paper
+A paper explaining most of the implementation details and benchmarking can be found at this [link](https://www.biorxiv.org/content/early/2018/06/05/339564)
 
 ## Features
 
@@ -116,23 +118,19 @@ If you prefer to manage this information somewhere else, the `CAIMAN_DATA` envir
    * Use Conda to install git (With "conda install git")
    * Microsoft Build Tools for Visual Studio 2017 <https://www.visualstudio.com/downloads/#build-tools-for-visual-studio-2017>. Check the "Build Tools" box, and in the detailed view on the right check the "C/C++ CLI Tools" component too.
 
+Use the following menu item to launch a anaconda-enabled command prompt: start>programs>anaconda3>anaconda prompt
+
     ```bash
-    
     git clone  https://github.com/flatironinstitute/CaImAn
     cd CaImAn
-    git pull
-    ```
-	start>programs>anaconda3>anaconda prompt
-	
-	```bash
-    
-	conda env create -f environment.yml -n caiman
-    activate caiman   
+    conda env create -f environment.yml -n caiman
+    activate caiman
     pip install . (OR pip install -e . if you want to develop code)
-	conda install numba
-	jupyter notebook --NotebookApp.iopub_data_rate_limit=1.0e10
+    copy caimanmanager.py ..
+    conda install numba
+    cd ..
     ```
-Then setup ```caimanmanager``` as described above.
+Then run ```caimanmanager``` as described above to make a data directory.
 
 For Python 2.7 on Windows follow the same procedure with replacing the file `environment.yml` with `environment_python2.yml` as before.	
 
@@ -181,7 +179,13 @@ A complete list of contributors can be found [here](https://github.com/flatironi
 
 # References
 
-The following references provide the theoretical background and original code for the included methods. 
+The following references provide the theoretical background and original code for the included methods.
+
+### Software package detailed description and benchmarking
+
+If you use this code please cite the corresponding papers where original methods appeared (see References below), as well as: 
+
+<a name="caiman"></a>[1] Giovannucci A., Friedrich J., Gunn P., Kalfon J., Koay S.A., Taxidis J., Najafi F., Gauthier J.L., Zhou P., Tank D.W., Chklovskii D.B., Pnevmatikakis E.A. (2018). CaImAn: An open source tool for scalable Calcium Imaging data Analysis. bioarXiv preprint. [[paper]](https://doi.org/10.1101/339564)
 
 ### Deconvolution and demixing of calcium imaging data
 
@@ -264,11 +268,6 @@ Special thanks to the following people for letting us use their datasets for our
 * Sue Ann Koay, David Tank, Princeton University
 * Manolis Froudarakis, Jake Reimers, Andreas Tolias, Baylor College of Medicine
 
-# Citation
-
-If you use this code please cite the corresponding papers where original methods appeared (see References above), as well as the following abstract:
-
-Giovannucci, A., Friedrich, J., Deverett, B., Staneva, V., Chklovskii, D., & Pnevmatikakis, E. (2017). CaImAn: An open source toolbox for large scale calcium imaging data analysis on standalone machines. Cosyne Abstracts.
 
 # Questions, comments, issues
 

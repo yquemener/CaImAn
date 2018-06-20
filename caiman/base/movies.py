@@ -238,7 +238,7 @@ class movie(ts.timeseries):
         T, d1, d2 = np.shape(self)
         num_windows = np.int(old_div(T, window))
         num_frames = num_windows * window
-        return np.median(np.mean(np.reshape(self[:num_frames], (window, num_windows, d1, d2)), axis=0), axis=0)
+        return np.nanmedian(np.nanmean(np.reshape(self[:num_frames], (window, num_windows, d1, d2)), axis=0), axis=0)
 
     def extract_shifts(self, max_shift_w=5, max_shift_h=5, template=None, method='opencv'):
         """
@@ -737,7 +737,7 @@ class movie(ts.timeseries):
 
         return mask
 
-    def local_correlations(self, eight_neighbours=False, swap_dim=True, frames_per_chunk=1500):
+    def local_correlations(self, eight_neighbours=False, swap_dim=True, frames_per_chunk=1500, order_mean=1):
         """Computes the correlation image for the input dataset Y
 
             Parameters:
@@ -764,7 +764,7 @@ class movie(ts.timeseries):
         Cn = np.zeros(self.shape[1:])
         if T <= 3000:
             Cn = si.local_correlations(
-                np.array(self), eight_neighbours=eight_neighbours, swap_dim=swap_dim)
+                np.array(self), eight_neighbours=eight_neighbours, swap_dim=swap_dim, order_mean=order_mean)
         else:
 
             n_chunks = T // frames_per_chunk
@@ -772,7 +772,7 @@ class movie(ts.timeseries):
                 print('number of chunks:' + str(jj) + ' frames: ' +
                       str([mv * frames_per_chunk, (mv + 1) * frames_per_chunk]))
                 rho = si.local_correlations(np.array(self[mv * frames_per_chunk:(mv + 1) * frames_per_chunk]),
-                                            eight_neighbours=eight_neighbours, swap_dim=swap_dim)
+                                            eight_neighbours=eight_neighbours, swap_dim=swap_dim, order_mean=order_mean)
                 Cn = np.maximum(Cn, rho)
                 pl.imshow(Cn, cmap='gray')
                 pl.pause(.1)
@@ -780,7 +780,7 @@ class movie(ts.timeseries):
             print('number of chunks:' + str(n_chunks - 1) +
                   ' frames: ' + str([(n_chunks - 1) * frames_per_chunk, T]))
             rho = si.local_correlations(np.array(self[(n_chunks - 1) * frames_per_chunk:]), eight_neighbours=eight_neighbours,
-                                        swap_dim=swap_dim)
+                                        swap_dim=swap_dim, order_mean=order_mean)
             Cn = np.maximum(Cn, rho)
             pl.imshow(Cn, cmap='gray')
             pl.pause(.1)
@@ -1016,10 +1016,26 @@ class movie(ts.timeseries):
         pl.imshow(zp, cmap=cmap, aspect=aspect, **kwargs)
         return zp
 
-    def local_correlations_movie(self, window=10,swap_dim=True):
+
+
+    def local_correlations_movie(self, file_name = None, window=10, swap_dim=True, eight_neighbours=True, order_mean = 1, dview = None):
         T, _, _ = self.shape
-        return movie(np.concatenate([self[j:j + window, :, :].local_correlations(
-            eight_neighbours=True,swap_dim=swap_dim)[np.newaxis, :, :] for j in range(T - window)], axis=0), fr=self.fr)
+        params = [[file_name,range(j,j + window), eight_neighbours, swap_dim, order_mean] for j in range(T - window)]
+        if dview is None:
+            parallel_result = [self[j:j + window, :, :].local_correlations(
+                    eight_neighbours=True,swap_dim=swap_dim, order_mean=order_mean)[np.newaxis, :, :] for j in range(T - window)]
+        else:
+            if 'multiprocessing' in str(type(dview)):
+                parallel_result = dview.map_async(
+                        local_correlations_movie_parallel, params).get(4294967)
+            else:
+                parallel_result = dview.map_sync(
+                    local_correlations_movie_parallel, params)
+                dview.results.clear()
+
+        mm = movie(np.concatenate(parallel_result, axis=0),fr=self.fr)
+        return mm
+
 
     def play(self, gain=1, fr=None, magnification=1, offset=0, interpolation=cv2.INTER_LINEAR,
              backend='opencv', do_loop=False, bord_px=None, q_max=100, q_min = 0, plot_text = False):
@@ -1267,10 +1283,8 @@ def load(file_name,fr=30,start_time=0,meta_data=None,subindices=None,shape=None,
                 length = len(pims_movie)
                 height, width = pims_movie.frame_shape[0:2] #shape is (h,w,channels)
                 input_arr = np.zeros((length, height, width), dtype=np.uint8)
-                #z2 = np.asarray(z)
                 for i in range(len(pims_movie)): #iterate over frames
                     input_arr[i] = rgb2gray(pims_movie[i])
-
 
             # When everything done, release the capture
             cap.release()
@@ -1641,3 +1655,11 @@ def to_3D(mov2D, shape, order='F'):
     transform to 3D a vectorized movie
     """
     return np.reshape(mov2D, shape, order=order)
+
+
+def local_correlations_movie_parallel(params):
+
+        import caiman as cm
+        mv_name, idx, eight_neighbours, swap_dim, order_mean = params
+        mv = cm.load(mv_name,subindices=idx)
+        return mv.local_correlations(eight_neighbours=eight_neighbours, swap_dim=swap_dim, order_mean=order_mean)[None,:,:].astype(np.float32)

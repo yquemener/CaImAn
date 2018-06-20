@@ -21,15 +21,17 @@ Class representing a time series.
 author: Andrea Giovannucci
 """
 
-from __future__ import print_function
 #%%
-import os
-import warnings
-import numpy as np
+from __future__ import print_function
 import cv2
 import h5py
+import numpy as np
+import os
 import pylab as plt
 import pickle as cpk
+from scipy.io import savemat
+import tifffile
+import warnings
 
 try:
     cv2.setNumThreads(0)
@@ -40,13 +42,6 @@ try:
     plt.ion()
 except:
     pass
-
-from scipy.io import savemat
-try:
-    import tifffile
-    print('tifffile package not found, using skimage instead for imsave')
-except:
-    from skimage.external import tifffile
 
 #%%
 class timeseries(np.ndarray):
@@ -156,7 +151,7 @@ class timeseries(np.ndarray):
         parameters:
         ----------
         file_name: str
-            name of file. Possible formats are tif, avi, npz and hdf5
+            name of file. Possible formats are tif, avi, npz, mmap and hdf5
 
         to32: Bool
             whether to transform to 32 bits
@@ -272,7 +267,7 @@ class timeseries(np.ndarray):
                 1 if len(dims) == 2 else dims[2]) + '_order_' + str(order) + '_frames_' + str(T) + '_.mmap'
             fname_tot = os.path.join(os.path.split(file_name)[0], fname_tot)
             big_mov = np.memmap(fname_tot, mode='w+', dtype=np.float32,
-                                shape=(np.prod(dims), T), order=order)
+                                shape=(np.uint64(np.prod(dims)), np.uint64(T)), order=order)
 
             big_mov[:] = np.asarray(input_arr, dtype=np.float32)
             big_mov.flush()
