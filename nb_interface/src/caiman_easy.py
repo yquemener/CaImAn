@@ -17,7 +17,7 @@ from caiman.source_extraction import cnmf
 from caiman.motion_correction import MotionCorrect
 from caiman.motion_correction import tile_and_correct, motion_correction_piecewise
 from caiman import save_memmap_join
-from caiman.mmapping import load_memmap
+from caiman.mmapping import load_memmap, save_tif_to_mmap_online, save_memmap
 
 from caiman.utils.visualization import inspect_correlation_pnr
 from caiman.components_evaluation import estimate_components_quality_auto
@@ -81,17 +81,20 @@ def load_raw_files(fldr, print_values=False):
 				print(each_file)
 		return files
 @out.capture()
-def load_mmap_files(fldr, print_values=False):
+def load_cnmf_files(fldr, print_values=False):
 	if os.path.isfile(fldr):
-		if pathlib.Path(fldr).suffix not in ['.mmap']:
-			print("Error: File must be .mmap")
+		if pathlib.Path(fldr).suffix not in ['.mmap', '.tif', '.tiff', '.avi']:
+			print("Error: File must be .mmap, .tif, .tiff, or .avi")
 			return []
 		if print_values: print("Loaded: " + fldr)
 		return [fldr]
 	else:
 		fldr = os.path.join(fldr, '')
-		files = glob.glob(fldr + '*.mmap')
+		files = glob.glob(fldr + '*.mmap') + glob.glob(fldr + '*.tif') + glob.glob(fldr + '*.tiff') + glob.glob(fldr + '*.avi')
 		files = sorted(files)
+		if len(files) == 0:
+			print("Error: No appropriate files found in directory.")
+			return []
 		if print_values:
 			print("Loaded files:")
 			for each_file in files:
@@ -164,9 +167,9 @@ def run_mc(fnames, mc_params, dsfactors, rigid=True, batch=True, scope_type=2):
 		else:
 			print("Starting NON-rigid motion correction...")
 			#mc.motion_correct_pwrigid(save_movie=True, template=new_templ, show_template=False)
-			if scope_type == 1:
+			if scope_type == 1: #one photon
 				mc = motion_correct_oneP_nonrigid(tiff_file, **mc_params)
-			else:
+			else: #two photon
 				mc.motion_correct_pwrigid(save_movie=True, template=new_templ)
 			new_templ = mc.total_template_els
 			mc_mov = cm.load(mc.fname_tot_els)
@@ -271,15 +274,16 @@ def cnmf_run(fname, cnmf_params): #fname is a full path, mmap file
 	cnm = cnmf.CNMF(**cnmf_params)
 	cnm.fit(Yr)
 	#get results
-	A, C, b, f, YrA, sn, conv = cnm.A, cnm.C, cnm.b, cnm.f, cnm.YrA, cnm.sn, cnm.S
-	print("(Sparse) Mem Size A: {0}, Mem Size C: {1}".format(getsizeof(A), getsizeof(C)))
-	print("(Dense) Mem Size A: {0}, Mem Size C: {1}".format(np.asarray(A).nbytes, np.asarray(A).nbytes))
+	#A, C, b, f, YrA, sn, conv = cnm.A, cnm.C, cnm.b, cnm.f, cnm.YrA, cnm.sn, cnm.S
+	'''print("(Sparse) Mem Size A: {0}, Mem Size C: {1}".format(getsizeof(A), getsizeof(C)))
+	print("(Dense) Mem Size A: {0}, Mem Size C: {1}".format(np.asarray(A).nbytes, np.asarray(A).nbytes))'''
 	#Let's normalize the Ca2+ signal traces
-	for i in range(C.shape[0]): #for each trace
+	'''for i in range(C.shape[0]): #for each trace
 		C[i] = normalize_signal(C[i])
-	idx_components = np.arange(A.shape[-1])
+	idx_components = np.arange(A.shape[-1])'''
 	clean_up() #remove log files
-	return A, C, b, f, YrA, sn, idx_components, conv
+	#return A, C, b, f, YrA, sn, idx_components, conv
+	return cnm
 
 
 def plot_contours(YrDT, cnmf_results, cn_filter):

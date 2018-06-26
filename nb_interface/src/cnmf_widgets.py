@@ -214,7 +214,7 @@ p_widget = widgets.BoundedIntText(
 )
 gnb_widget = widgets.BoundedIntText(
 	value=2,
-	min=1,
+	min=-2,
 	max=5,
 	step=1,
 	#description='GNB:',
@@ -278,7 +278,11 @@ cnn_thr_widget = widgets.BoundedFloatText(
 )
 cnn_thr_box = widgets.HBox([widgets.Label(value="CNN threshold:"),cnn_thr_widget])
 
-
+init_method_widget = widgets.Dropdown(
+    options={'Greedy ROI': 'greedy_roi', 'Corr PNR': 'corr_pnr', 'Sparse NMF':'sparse_nmf'},
+    value='greedy_roi',
+    description='Init Method',
+)
 
 #############
 
@@ -317,7 +321,7 @@ basic_row4 = widgets.HBox()
 basic_row4.children = [min_corr_widget, min_pnr_widget]
 
 basic_row5 = widgets.HBox()
-basic_row5.children = [deconv_flag_widget, save_movie_widget, refine_components_widget]
+basic_row5.children = [deconv_flag_widget, save_movie_widget]
 
 cnmf_basic_settings = widgets.VBox()
 cnmf_basic_settings.children = [basic_row0,basic_row1,basic_row2, basic_row3, basic_row4, basic_row5]
@@ -331,6 +335,7 @@ cnmf_advanced_settings.children = [ \
 	min_snr_widget, \
 	rval_thr_box, \
 	cnn_thr_box, \
+	init_method_widget,
 ]
 cnmf_settings = widgets.Accordion(children=[cnmf_basic_settings, cnmf_advanced_settings])
 cnmf_settings.set_title(0, 'Basic CNMF Settings') #MC = Motion Correction

@@ -163,6 +163,10 @@ def load_f(x):
 #Load Files button click handler
 load_files_btn.on_click(load_f)
 
+def reshape_Yr(Yr, dims, T):
+	Yr_reshaped = np.rollaxis(np.reshape(Yr, dims + (T,), order='F'),2)
+	return Yr_reshaped
+
 def plot_shifts(mc_results, is_rigid=True):
 	try:
 		if is_rigid:
@@ -177,28 +181,43 @@ def plot_shifts(mc_results, is_rigid=True):
 			yshifts_line.x = y_shifts_x
 			yshifts_line.y = y_shifts_y
 			#add marks to bqplot Figure
-			shifts_plot.marks=[xshifts_line, yshifts_line]
+			shifts_plot_x.marks=[xshifts_line, yshifts_line]
+			shifts_plot_y.layout.display = 'None'
+			tb_shifts_y.layout.display = 'None'
+			shifts_plot_x.title = 'MC Extracted Shifts'
 			#update legend
 			ax_x.label = 'Time / Frames'
 			ax_y.label = 'Shift'
 		else: #non-rigid
 			#'x_shifts_els',
- 			#'y_shifts_els'
+			#'y_shifts_els'
 			#shifts = np.array(mc_results[0].shifts_nonrig)
 			#x_shifts_x = np.arange(shifts.shape[0])
-			x_shifts_mean = np.array([np.mean(x) for x in context.mc_nonrig[0].x_shifts_els])
-			x_shifts_var = np.array([np.var(x) for x in context.mc_nonrig[0].x_shifts_els])
-			y_shifts_mean = np.array([np.mean(y) for y in context.mc_nonrig[0].y_shifts_els])
-			y_shifts_var = np.array([np.var(y) for y in context.mc_nonrig[0].y_shifts_els])
-			xshifts_scat.x = x_shifts_mean
-			xshifts_scat.y = x_shifts_var
-			yshifts_scat.x = y_shifts_mean
-			yshifts_scat.y = y_shifts_var
+			#x_shifts_mean = np.array([np.mean(x) for x in context.mc_nonrig[0].x_shifts_els])
+			#x_shifts_var = np.array([np.var(x) for x in context.mc_nonrig[0].x_shifts_els])
+			#y_shifts_mean = np.array([np.mean(y) for y in context.mc_nonrig[0].y_shifts_els])
+			#y_shifts_var = np.array([np.var(y) for y in context.mc_nonrig[0].y_shifts_els])
+			#TODO fix this
+			shifts_plot_y.layout.display = ''
+			tb_shifts_y.layout.display = ''
+			shifts_plot_x.title = 'MC Extracted X Shifts'
+			xdata = context.mc_nonrig[0].x_shifts_els
+			ydata = context.mc_nonrig[0].y_shifts_els
+			frames = np.arange(len(xdata))
+			mean_line_x.x = frames
+			mean_line_x.y = np.mean(xdata,-1)
+			mean_line_y.x = frames
+			mean_line_y.y = np.mean(ydata,-1)
+			range_line_x.x = frames
+			range_line_x.y = np.array([np.max(xdata,-1), np.min(xdata,-1)])
+			range_line_y.x = frames
+			range_line_y.y = np.array([np.max(ydata,-1), np.min(ydata,-1)])
 			#add marks to bqplot Figure
-			shifts_plot.marks=[xshifts_scat, yshifts_scat]
+			shifts_plot_x.marks=[range_line_x, mean_line_x]
+			shifts_plot_y.marks=[range_line_y, mean_line_y]
 			#update legend
-			ax_x.label = 'Patch Shifts Mean'
-			ax_y.label = 'Patch Shifts Variance'
+			ax_x.label = 'Movie Frames'
+			ax_y.label = 'Patch Shifts'
 		# Un-HIDE (display) plot
 		mc_shifts_box.layout.display = ''
 	except Exception as e:
@@ -241,6 +260,7 @@ def run_mc_ui(_):
 		'shifts_opencv':True,
 		'nonneg_movie':True,
 		'gSig_filt' : [int(gSigFilter_widget.value)] * 2, #default 9,9  best 6,6,
+		'border_nan':'copy'
 	}
 	#call run_mc
 	#< run_mc(fnames, mc_params, rigid=True, batch=True) > returns list of mmap file names
@@ -295,7 +315,7 @@ def show_movies(_):
 	mc_mov.fr = fr_
 	offset_mov = -np.min(orig_mov[:100])  # make the dataset mostly non-negative
 	cm.concatenate([orig_mov+offset_mov, mc_mov],
-               axis=2).play(fr=60, offset=0, gain=gain, magnification=mag)  # press q to exit
+			   axis=2).play(fr=60, offset=0, gain=gain, magnification=mag)  # press q to exit
 			   #.play(fr=60, gain=15, magnification=2, offset=0)
 	#orig_mov.play()
 	#mc_mov.play()
@@ -304,8 +324,8 @@ def show_movies(_):
 #Load's memmap file into context
 def cnmf_load_file_btn_click(_):
 	fname = cnmf_file_selector.value
-	if check_file(fname, ['.mmap']):
-		context.working_cnmf_file = load_mmap_files(fname, print_values=True)[0]
+	if check_file(fname, ['.mmap', '.tif', '.tiff', '.avi']):
+		context.working_cnmf_file = load_cnmf_files(fname, print_values=True)[0]
 		update_status("Loaded File for CNMF: {}".format(fname))
 	else:
 		update_status("Error: File not found or invalid file type.")
@@ -351,6 +371,30 @@ def patches_on_value_change(change):
 
 is_patches_widget.observe(patches_on_value_change, names='value')
 
+def filter_components():
+	Yr_reshaped = reshape_Yr(*context.YrDT)
+	snr = min_snr_edit_widget.value #returns tuple
+	cnn = cnnmin_edit_widget_.value #returns tuple
+	rval = rvalmin_edit_widget_.value #returns tuple
+	gSig = None #list(gSig_edit_widget_.value)
+	fr_ = float(fr_widget.value)
+	decay_time_ = float(decay_time_widget.value)
+
+	params = {'fr': fr_, 'decay_time': decay_time_, 'min_SNR':snr[1], \
+		  'SNR_lowest':snr[0], 'rval_thr':rval[1], 'rval_lowest':rval[0], \
+		  'use_cnn':None, 'min_cnn_thr':cnn[1], \
+		  'cnn_lowest':cnn[0], 'gSig_range':gSig}
+
+	cnm = context.cnm.filter_components(Yr_reshaped, **params)
+	'''fr=fr_, decay_time=decay_time_, min_SNR=min_snr_, \
+				SNR_lowest=None, rval_thr=rval_thr_, rval_lowest=None, \
+				use_cnn=None, min_cnn_thr=cnn_thr_, \
+				cnn_lowest=None, gSig_range=None'''
+	cnm.dview = None #need to set to none to be pickle-able
+	context.cnm = cnm
+	context.idx_components_keep, context.idx_components_toss = cnm.idx_components, cnm.idx_components_bad
+	return context.idx_components_keep, context.idx_components_toss
+
 @out.capture()
 def run_cnmf_ui(_):
 	update_status("Running CNMF...")
@@ -373,6 +417,8 @@ def run_cnmf_ui(_):
 	gSiz = (int(gSiz_widget.value),) * 2
 	stride_ = int(stride_widget.value)
 	rf_ = int(rf_widget.value)
+	scope_type = int(microscopy_type_widget.value)
+	twophoton = True if scope_type == 2 else False
 	#advanced settings
 	p_ = int(p_widget.value)
 	gnb_ = int(gnb_widget.value)
@@ -381,10 +427,11 @@ def run_cnmf_ui(_):
 	is_dendrites_ = bool(is_dendrites_widget.value)
 	rval_thr_ = float(rval_thr_widget.value)
 	cnn_thr_ = float(cnn_thr_widget.value)
+	method_init = str(init_method_widget.value)
 
 	cnmf_params = {
 		'n_processes':context.n_processes,
-		'method_init':'corr_pnr',
+		'method_init': method_init,
 		'k':K,
 		'gSig':gSig,
 		'gSiz':gSiz,
@@ -409,8 +456,8 @@ def run_cnmf_ui(_):
 		'min_pnr':min_pnr,
 		'normalize_init': False,
 		#'deconvolve_options_init': None,
-		'ring_size_factor':1.5,
-		'center_psf': True,
+		'ring_size_factor':1.5 if not twophoton else None,
+		'center_psf': False if twophoton else True,
 		'deconv_flag': bool(deconv_flag_widget.value),
 		'simultaneously': False,
 		'del_duplicates':True,
@@ -422,15 +469,33 @@ def run_cnmf_ui(_):
 	#get original movie as mmap
 	filename=os.path.split(context.working_cnmf_file)[-1]
 	# =
-	Yr, dims, T = load_memmap(os.path.join(os.path.split(context.working_cnmf_file)[0],filename))
+	cnmf_file_ = context.working_cnmf_file
+	cnmf_path_ = pathlib.Path(cnmf_file_)
+	if cnmf_path_.suffix != '.mmap':
+		try:
+			print("Converting to .mmap format")
+			#cnmf_path_new = os.path.join(str(cnmf_path_.parent),'') + cnmf_path_.stem + '.mmap'
+			#cm.load(cnmf_file_).save(cnmf_path_new, order='C')
+			cnmf_file_ = save_memmap([cnmf_file_], order='C')
+			context.working_cnmf_file = cnmf_file_
+		except Exception as e:
+			print("Error: Could not convert file to mmap: {}".format(e))
+
+	Yr, dims, T = load_memmap(cnmf_file_)
 	#bord_px_els = np.ceil(np.maximum(np.max(np.abs(mc.x_shifts_els)),
-                                 #np.max(np.abs(mc.y_shifts_els)))).astype(np.int)
+								 #np.max(np.abs(mc.y_shifts_els)))).astype(np.int)
 	#get correlation image
 	context.YrDT = Yr, dims, T
 	print("Starting CNMF-E...")
 	print("Using patches") if is_patches else print("Single FOV")
 	print("Deconvolution: ON") if bool(deconv_flag_widget.value) else print("Deconvolution: OFF")
-	A, C, b, f, YrA, sn, idx_components, conv = cnmf_run(context.working_cnmf_file, cnmf_params)
+	cnm = cnmf_run(context.working_cnmf_file, cnmf_params)
+	cnm.dview = None #need to set to none to be pickle-able
+	context.cnm = cnm
+	A, C, b, f, YrA, sn, conv = cnm.A, cnm.C, cnm.b, cnm.f, cnm.YrA, cnm.sn, cnm.S
+	for i in range(C.shape[0]): #for each trace
+		C[i] = normalize_signal(C[i])
+	idx_components = np.arange(A.shape[-1])
 	print("Debugging (caiman_interface.py line 397 filter_rois): A.shape {0}, C.shape {1}, Yr.shape {2}, idx_components_orig {3}".format(A.shape,C.shape,Yr.shape,idx_components))
 	print("{}".format(type(A)))
 	'''    if not is_patches: #for some reason, need to convert to ndarray if doing Single FOV;
@@ -441,13 +506,13 @@ def run_cnmf_ui(_):
 	#print("CNMF-E FINISHED!")
 	#update_status("CNMF Finished")
 	#results: A, C, b, f, YrA, sn, idx_components, S
-	refine_results = bool(refine_components_widget.value) #automatically refine results
+	refine_results = True#bool(refine_components_widget.value) #automatically refine results
 	save_movie_bool = bool(save_movie_widget.value)
 	if refine_results:
 		update_status("Automatically refining results...")
-		context.idx_components_keep, context.idx_components_toss = \
-			filter_rois(context.YrDT, context.cnmf_results, context.dview, gSig, gSiz, fr=fr_, \
-				min_SNR=min_snr_, r_values_min=rval_thr_,decay_time=decay_time_, cnn_thr=cnn_thr_)
+		#Yr_reshaped = reshape_Yr(*context.YrDT)
+		context.idx_components_keep, context.idx_components_toss = filter_components()
+
 	else:
 		update_status("Skipping automatic results refinement...")
 		context.idx_components_keep = context.cnmf_results[6]
@@ -473,13 +538,20 @@ major_cnmf_col.children = [cnmf_file_box, cnmf_settings, run_cnmf_btn]
 
 
 def is_edit_changed(changed):
-	if changed['new'] == 'View':
+	if changed['new'] == 'View': #View mode
+		rois_edit.visible = False
+		rois.visible = True
 		fig4.layout.display = ''
 		fig3.layout.display = ''
 		fig2.layout.display = ''
 		edit_panel_widget.layout.display = 'None'
 		fig.layout.width = '67%'
+		#Need to update selected ROIs
+		context.idx_components_keep = rois_edit.selected
+		update_idx_components_plots()
 	else: #Edit mode
+		rois.visible = False
+		rois_edit.visible = True
 		fig4.layout.display = 'None'
 		fig3.layout.display = 'None'
 		fig2.layout.display = 'None'
@@ -509,7 +581,7 @@ def download_data_func(_):
 	metadata_ = ts2_
 	deld_rois_ = []#list(delete_list_widget.value)
 	wkdir_ = os.path.join(workingdir_selector.value, '') #adds ending slash if not present
-	print("Excluding ROIs: %s" % (deld_rois_))
+	#print("Excluding ROIs: %s" % (deld_rois_))
 	def save_traces():
 		nonlocal adj_c
 		if dff_chk.value == True:
@@ -613,7 +685,10 @@ def update_plots(A, C, dims, conv, contours):
 	centers = centers.T
 	# isolate all ROIs (background substracted)
 	a_image_np = np.mean(A.reshape(dims[1], dims[0], A.shape[1]), axis=2).T
-	a_image_np = scale( a_image_np, axis=1, with_mean=False, with_std=True, copy=True )
+	try:
+		a_image_np = scale( a_image_np, axis=1, with_mean=False, with_std=True, copy=True )
+	except Exception:
+		print("Error: Could not normalize image pixels. Array may contain NaNs or infs")
 	a_image.value = gen_image_data(a_image_np, "All ROIs")#a_data
 	a_image.width = dims[1]
 	a_image.height = dims[0]
@@ -624,6 +699,9 @@ def update_plots(A, C, dims, conv, contours):
 	# Update ROI dots
 	rois.x = centers[1]
 	rois.y = (dims[0] - centers[0])
+	rois_edit.x = centers[1]
+	rois_edit.y = (dims[0] - centers[0])
+	rois_edit.selected = list(np.arange(len(rois_edit.x)))
 	# update slider
 	roi_slider.max = A.shape[1]
 	# update contours
@@ -655,36 +733,27 @@ def update_plots(A, C, dims, conv, contours):
 	'''	l2 = traitlets.directional_link((rois, 'selected'),(roi_slider, 'value'), roi_change)
 	l1 = traitlets.directional_link((roi_slider, 'value'), (rois, 'selected'), slider_change)'''
 
+def update_idx_components_plots():
+	idx_components_keep = list(context.idx_components_keep)
+	A, C, b, f, YrA, sn, idx_components, conv = load_context_data(context)
+	idx_components_keep = context.idx_components_keep
+	A_ = A[:, idx_components_keep]
+	C_ = C[idx_components_keep, :]
+	contours_ = [contours[i] for i in idx_components_keep]
+	update_plots(A_, C_, context.YrDT[1], conv, contours_)
+
 @out.capture()
 def update_btn_click(_):
 	global contours
 	if context.cnmf_results in [None, [], ''] or len(context.YrDT) == 0:
 		update_status("Error: No data loaded.")
 		return None
-	update_status("Updating plots...")
 
-	min_snr_ = float(min_snr_edit_widget.value)
-	cnnlowest_ = float(cnnlowest_edit_widget_.value)#
-	cnnmin_ = float(cnnmin_edit_widget_.value)#
-	rvallowest_ = float(rvallowest_edit_widget_.value)#
-	rvalmin_ = float(rvalmin_edit_widget_.value)#
-	fitness_delta_ = float(fitness_delta_edit_widget_.value)
-	min_std_reject_ = float(minstdreject_edit_widget_.value) #
-
-	fr_ = float(fr_widget.value)
-	decay_time_ = float(decay_time_widget.value)
-	gSig = int(gSig_edit_widget_.value)
-	gSiz = 12 #isn't actually used, need to fix
-	'''filter_rois(YrDT, cnmf_results, dview, gSig, gSiz, fr=0.3, decay_time=0.4, min_SNR=3, \
-		r_values_min=0.85, cnn_thr=0.8, min_std_reject=0.5, thresh_fitness_delta=-20., thresh_cnn_lowest=0.1, \
-		r_values_lowest=-1)'''
 	if context.YrDT[0].filename is None:
 		context.YrDT = getYrDT()
-	context.idx_components_keep, context.idx_components_toss = \
-		filter_rois(context.YrDT, context.cnmf_results, context.dview, gSig, gSiz, fr=fr_, \
-			min_SNR=min_snr_, r_values_min=rvalmin_,decay_time=decay_time_, cnn_thr=cnnmin_, \
-			min_std_reject=min_std_reject_, thresh_fitness_delta=fitness_delta_,thresh_cnn_lowest=cnnlowest_, \
-			r_values_lowest=rvallowest_)
+
+	idx_components_keep, idx_components_toss = filter_components()
+
 	A, C, b, f, YrA, sn, idx_components, conv = load_context_data(context)
 	idx_components_keep = context.idx_components_keep
 	A_ = A[:, idx_components_keep]
@@ -693,7 +762,6 @@ def update_btn_click(_):
 	#sometimes plot width gets messed up, so set width
 	#fig.layout.width = '67%'
 	update_plots(A_, C_, context.YrDT[1], conv, contours_)
-	update_status("Idle.")
 
 def roi_change(change):
 	if change is not None:
@@ -717,7 +785,7 @@ def show_cnmf_results_interface(context):
 	gSig = context.cnmf_params['gSig'][0]
 	#Yr, dims, T = context.YrDT
 	Yr, dims, T = getYrDT()
-	Yr_reshaped = np.rollaxis(np.reshape(Yr, dims + (T,), order='F'),2)
+	Yr_reshaped = reshape_Yr(Yr, dims, T) #np.rollaxis(np.reshape(Yr, dims + (T,), order='F'),2)
 	#interactive ROI refinement
 	try:
 		A, C, b, f, YrA, sn, idx_components, conv = load_context_data(context)
@@ -774,6 +842,9 @@ def show_cnmf_results_interface(context):
 	#roi_image_mark.image = roi_image
 	rois.x = centers[1]
 	rois.y = (dims[0] - centers[0])
+	rois_edit.x = centers[1]
+	rois_edit.y = (dims[0] - centers[0])
+	rois_edit.selected = list(np.arange(len(rois_edit.x)))
 
 	'''	def get_contour_coords(index):
 		x = [x['coordinates'][:,0] for x in contours][index]
@@ -849,7 +920,11 @@ def show_cnmf_results_interface(context):
 download_btn.on_click(download_data_func)
 #delete_roi_btn.on_click(delete_roi_func)
 is_edit_widget.observe(is_edit_changed, names='value')
-update_edit_btn.on_click(update_btn_click)
+
+snr = min_snr_edit_widget.observe(update_btn_click, names='value')
+cnn = cnnmin_edit_widget_.observe(update_btn_click, names='value')
+rval = rvalmin_edit_widget_.observe(update_btn_click, names='value')
+#update_edit_btn.on_click(update_btn_click)
 
 	#update_status("Idle")
 	#return view_cnmf_widget
@@ -897,7 +972,7 @@ def view_cnmf_mov_click(_):
 	Yr, dims, T = getYrDT()
 	mag_val = validate_col_mag_slider.value
 	cm.movie(np.reshape(A.tocsc()[:, context.idx_components_keep].dot(
-    C[context.idx_components_keep]), dims + (-1,), order='F').transpose(2, 0, 1)).play(magnification=mag_val, gain=10.)
+	C[context.idx_components_keep]), dims + (-1,), order='F').transpose(2, 0, 1)).play(magnification=mag_val, gain=10.)
 	update_status("Idle")
 
 def view_bgmov_click(_):
@@ -907,7 +982,7 @@ def view_bgmov_click(_):
 	A, C, b, f, YrA, sn, idx_components, conv = context.cnmf_results
 	mag_val = validate_col_mag_slider.value
 	cm.movie(np.reshape(b.dot(f), dims + (-1,),
-                    order='F').transpose(2, 0, 1)).play(magnification=mag_val, gain=1.)#magnification=3, gain=1.
+					order='F').transpose(2, 0, 1)).play(magnification=mag_val, gain=1.)#magnification=3, gain=1.
 	update_status("Idle")
 
 def view_residual_click(_):
@@ -917,7 +992,7 @@ def view_residual_click(_):
 	Y = Yr.T.reshape((T,) + dims, order='F')
 	mag_val = validate_col_mag_slider.value
 	cm.movie(np.array(Y) - np.reshape(A.tocsc()[:, :].dot(C[:]) + b.dot(
-    f), dims + (-1,), order='F').transpose(2, 0, 1)).play(magnification=mag_val, gain=10., fr=10) #magnification=3, gain=10., fr=10
+	f), dims + (-1,), order='F').transpose(2, 0, 1)).play(magnification=mag_val, gain=10., fr=10) #magnification=3, gain=10., fr=10
 	update_status("Idle")
 
 validate_col_cnmf_mov_btn.on_click(view_cnmf_mov_click)
@@ -975,5 +1050,5 @@ children = [wkdir_context_box,major_col,mc_results_box,major_cnmf_col,view_resul
 tab_titles = ['Main','Motion Correction','MC Results','CNMF', 'CNMF Results','CNMF Validation']
 ui_tab.children = children
 for i in range(len(children)):
-    ui_tab.set_title(i, str(tab_titles[i]))
+	ui_tab.set_title(i, str(tab_titles[i]))
 app_ui.children = [status_bar_widget, ui_tab, out]

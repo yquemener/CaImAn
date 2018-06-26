@@ -40,6 +40,8 @@ class Context: #used to save data related to analysis (not serializable)
 		#rest of properties
 		self.cnmf_params = None # CNMF Params: Dict
 		self.correlation_img = None #
+		#CNMF object
+		self.cnm = None
 
 	def save(self,path):
 		'''tmpd = {
@@ -75,7 +77,8 @@ class Context: #used to save data related to analysis (not serializable)
 			self.idx_components_toss,
 			tmp_cnmf_params,
 			self.correlation_img,
-			self.mc_dsfactors
+			self.mc_dsfactors,
+            self.cnm
 		]
 		save_obj(path, tmpd)
 		print("Context saved to: %s" % (path,))
@@ -100,8 +103,12 @@ class Context: #used to save data related to analysis (not serializable)
 			self.working_dir, self.working_mc_files, self.working_cnmf_file, self.mc_mmaps, self.mc_rig, \
 			self.mc_nonrig, self.YrDT, self.cnmf_results, self.idx_components_keep, \
 			self.idx_components_toss, self.cnmf_params, self.correlation_img, self.mc_dsfactors = tmpd
-		else:
+		elif len(tmpd) == 14: #for backward compatibility
 			self.working_dir, self.working_mc_files, self.working_cnmf_file, self.mc_mmaps, self.mc_rig, \
 			self.mc_nonrig, self.border_pix, self.YrDT, self.cnmf_results, self.idx_components_keep, \
 			self.idx_components_toss, self.cnmf_params, self.correlation_img, self.mc_dsfactors = tmpd
+		else: #for backward compatibility
+			self.working_dir, self.working_mc_files, self.working_cnmf_file, self.mc_mmaps, self.mc_rig, \
+			self.mc_nonrig, self.border_pix, self.YrDT, self.cnmf_results, self.idx_components_keep, \
+			self.idx_components_toss, self.cnmf_params, self.correlation_img, self.mc_dsfactors, self.cnm = tmpd
 		print("Context loaded from: %s" % (path,))

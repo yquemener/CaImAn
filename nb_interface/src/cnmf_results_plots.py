@@ -48,6 +48,11 @@ rois = Scatter(scales={'x': scale_x2, 'y': scale_y2}, default_size=30,
 rois.interactions = {'click': 'select'}
 rois.selected_style = {'opacity': 1.0, 'fill': 'Black', 'stroke': 'Black', 'size':30}
 
+rois_edit = Scatter(scales={'x': scale_x2, 'y': scale_y2}, default_size=30, colors=['red'], \
+			selected_style={'opacity': '1'}, unselected_style={'opacity': '0.2'})
+rois_edit.interactions = {'click': 'select'}
+rois_edit.visible = False
+
 #roi_slider = IntSlider(min=1, step=1, description='ROI#', value=1)
 
 
@@ -57,7 +62,7 @@ contour_mark = bqplot.Lines(colors=['yellow'], scales={'x': scale_x2, 'y': scale
 	#rois.on_element_click(roi_click)
 
 fig = bqplot.Figure(padding_x=0, padding_y=0, title='Detected ROIs')
-fig.marks = [cor_image_mark, rois]
+fig.marks = [cor_image_mark, rois, rois_edit]
 fig.axes = [bqplot.Axis(scale=scale_x2), bqplot.Axis(scale=scale_y2, orientation='vertical')]
 
 fig2 = bqplot.Figure(padding_x=0, padding_y=0, title='Background Subtracted')

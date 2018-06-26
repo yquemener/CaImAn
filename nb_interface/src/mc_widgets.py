@@ -268,19 +268,35 @@ xshifts_line = bqplot.Lines(scales={'x': sc_x, 'y': sc_y},
 yshifts_line = bqplot.Lines(scales={'x': sc_x, 'y': sc_y},
              stroke_width=3, colors=['orange'], display_legend=True, labels=['Y Shifts'])
 
-xshifts_scat = bqplot.marks.Scatter(scales={'x':bqplot.LinearScale(), 'y':bqplot.LinearScale()}, colors=['red'], display_legend=True, labels=['X Shifts'])
+x_sc = bqplot.LinearScale()
+y_sc = bqplot.LinearScale()
+
+mean_line_x = bqplot.Lines(scales={'x': x_sc, 'y': y_sc}, colors=['black'], labels=['X Shifts'])
+range_line_x = bqplot.Lines(scales={'x': x_sc, 'y': y_sc}, colors=['lightgray'],fill_colors=['lightgray'], fill='between')
+mean_line_y = bqplot.Lines(scales={'x': x_sc, 'y': y_sc}, colors=['black'], labels=['Y Shifts'])
+range_line_y = bqplot.Lines(scales={'x': x_sc, 'y': y_sc}, colors=['lightgray'],fill_colors=['lightgray'], fill='between')
+
+'''xshifts_scat = bqplot.marks.Scatter(scales={'x':bqplot.LinearScale(), 'y':bqplot.LinearScale()}, colors=['red'], display_legend=True, labels=['X Shifts'])
 yshifts_scat = bqplot.marks.Scatter(scales={'x':bqplot.LinearScale(), 'y':bqplot.LinearScale()}, colors=['orange'], display_legend=True, labels=['Y Shifts'])
+'''
+
+#[ np.var(x) for x in context.mc_nonrig[0].x_shifts_els]
+
+
 
 ax_x = bqplot.Axis(scale=sc_x, grid_lines='solid', label='Time/Frames') #Time / Frames
 ax_y = bqplot.Axis(scale=sc_y, orientation='vertical',
             grid_lines='solid', label='Shift') #shift
 
 #marks=[xshifts_line, yshifts_line]
-shifts_plot = bqplot.Figure(axes=[ax_x, ax_y], title='MC Extracted Shifts',
+shifts_plot_x = bqplot.Figure(axes=[ax_x, ax_y], title='MC Extracted X Shifts',
        legend_location='bottom-right')
+shifts_plot_y = bqplot.Figure(axes=[ax_x, ax_y], title='MC Extracted Y Shifts',
+      legend_location='bottom-right')
 
-tb_shifts = bqplot.Toolbar(figure=shifts_plot)
-mc_shifts_box = widgets.VBox([tb_shifts, shifts_plot])
+tb_shifts_x = bqplot.Toolbar(figure=shifts_plot_x)
+tb_shifts_y = bqplot.Toolbar(figure=shifts_plot_y)
+mc_shifts_box = widgets.VBox([tb_shifts_x, shifts_plot_x, tb_shifts_y, shifts_plot_y])
 mc_shifts_box.layout.display = 'None'
 
 mc_results_box = widgets.VBox()
