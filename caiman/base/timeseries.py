@@ -213,6 +213,20 @@ class timeseries(np.ndarray):
                 vw.write(cv2.cvtColor(d, cv2.COLOR_GRAY2BGR))
             vw.release()
 
+        elif extension == '.mp4':
+            codec = cv2.VideoWriter_fourcc(*'avc1')
+            np.clip(self, np.percentile(self, 1),
+                    np.percentile(self, 99), self)
+            minn, maxx = np.min(self), np.max(self)
+            data = 255 * (self - minn) / (maxx - minn)
+            data = data.astype(np.uint8)
+            y, x = data[0].shape
+            vw = cv2.VideoWriter(file_name, codec, self.fr,
+                                 (x, y), isColor=False)
+            for d in data:
+                vw.write(d)
+            vw.release()
+
         elif extension == '.mat':
             if self.file_name[0] is not None:
                 f_name = self.file_name
