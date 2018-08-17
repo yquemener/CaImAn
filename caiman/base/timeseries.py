@@ -22,9 +22,9 @@ author: Andrea Giovannucci
 """
 
 #%%
-from __future__ import print_function
 import cv2
 import h5py
+import logging
 import numpy as np
 import os
 import pylab as plt
@@ -165,18 +165,17 @@ class timeseries(np.ndarray):
 
         """
         name, extension = os.path.splitext(file_name)[:2]
-        print(extension)
+        logging.debug("Parsing extension " + str(extension))
 
 
         if extension == '.tif':  # load avi file
 
-
-            with tifffile.TiffWriter(file_name, bigtiff=bigtiff, imagej=imagej, software=software) as tif:
+            with tifffile.TiffWriter(file_name, bigtiff=bigtiff, imagej=imagej) as tif:
 
 
                 for i in range(self.shape[0]):
-                    if i%200 == 0:
-                        print(str(i) + ' frames saved')
+                    if i % 200 == 0:
+                        logging.debug(str(i) + ' frames saved')
 
                     curfr = self[i].copy()
                     if to32 and not('float32' in str(self.dtype)):
@@ -231,7 +230,7 @@ class timeseries(np.ndarray):
                 savemat(file_name, {'input_arr': np.rollaxis(
                     input_arr, axis=0, start=3), 'start_time': self.start_time, 'fr': self.fr, 'meta_data': self.meta_data, 'file_name': f_name})
 
-        elif extension == '.hdf5':
+        elif extension in ('.hdf5', '.h5'):
             with h5py.File(file_name, "w") as f:
                 if to32 and not('float32' in str(self.dtype)):
                     input_arr = input_arr.astype(np.float32)
@@ -245,9 +244,9 @@ class timeseries(np.ndarray):
                     dset.attrs["file_name"] = [
                         a.encode('utf8') for a in self.file_name]
                 except:
-                    print('No file name saved')
+                    logging.warning('No file saved')
                 if self.meta_data[0] is not None:
-                    print(self.meta_data)
+                    logging.debug("Metadata for saved file: " + str(self.meta_data))
                     dset.attrs["meta_data"] = cpk.dumps(self.meta_data)
 
         elif extension == '.mmap':
@@ -275,7 +274,7 @@ class timeseries(np.ndarray):
             return fname_tot
 
         else:
-            print(extension)
+            logging.error("Extension " + str(extension) + " unknown")
             raise Exception('Extension Unknown')
 
 
@@ -309,5 +308,5 @@ def concatenate(*args, **kwargs):
     try:
         return obj.__class__(np.concatenate(*args, **kwargs), **obj.__dict__)
     except:
-        print('no meta information passed')
+        logging.debug('no meta information passed')
         return obj.__class__(np.concatenate(*args, **kwargs))

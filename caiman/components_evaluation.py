@@ -7,20 +7,21 @@ Created on Thu Oct 20 12:12:34 2016
 @author: agiovann
 """
 
-from __future__ import division
-from __future__ import print_function
 from builtins import range
 from past.utils import old_div
-import numpy as np
-import os
-from .utils.stats import mode_robust, mode_robust_fast
-from scipy.sparse import csc_matrix
-from scipy.stats import norm
-import scipy
+
 import cv2
 import itertools
-from caiman.paths import caiman_datadir
+import logging
+import numpy as np
+import os
+import scipy
+from scipy.sparse import csc_matrix
+from scipy.stats import norm
 import warnings
+
+from caiman.paths import caiman_datadir
+from .utils.stats import mode_robust, mode_robust_fast
 
 try:
     cv2.setNumThreads(0)
@@ -174,7 +175,7 @@ def find_activity_intervals(C, Npeaks=5, tB=-3, tA=10, thres=0.3):
     for i in range(K):
         if np.sum(np.abs(np.diff(C[i, :]))) == 0:
             L.append([])
-            print('empyty component at:' + str(i))
+            logging.warning('empty component at:' + str(i))
             continue
         indexes = peakutils.indexes(C[i, :], thres=thres)
         srt_ind = indexes[np.argsort(C[i, indexes])][::-1]
@@ -212,7 +213,7 @@ def classify_components_ep(Y, A, C, b, f, Athresh=0.1, Npeaks=5, tB=-3, tA=10, t
     significant_samples = []
     for i in range(K):
         if i % 200 == 0:  # Show status periodically
-            print('components evaluated:' + str(i))
+            logging.info('Components evaluated:' + str(i))
         if LOC[i] is not None:
             atemp = A[:, i].toarray().flatten()
             atemp[np.isnan(atemp)] = np.nanmean(atemp)
@@ -224,7 +225,7 @@ def classify_components_ep(Y, A, C, b, f, Athresh=0.1, Npeaks=5, tB=-3, tA=10, t
 
             if len(indexes) == 0:
                 indexes = set(LOC[i])
-                print('Neuron:' + str(i) + ' includes overlapping spiking neurons')
+                logging.warning('Neuron:' + str(i) + ' includes overlapping spiking neurons')
 
             indexes = np.array(list(indexes)).astype(np.int)
             px = np.where(atemp > 0)[0]
@@ -256,7 +257,7 @@ def evaluate_components_CNN(A, dims, gSig, model_name=os.path.join(caiman_datadi
     os.environ["KERAS_BACKEND"] = "tensorflow"
     from keras.models import model_from_json
 #    except:
-#        print('PROBLEM LOADING KERAS: cannot use classifier')
+#        logging.error('PROBLEM LOADING KERAS: cannot use classifier')
 
 
     if loaded_model is None:
@@ -274,7 +275,7 @@ def evaluate_components_CNN(A, dims, gSig, model_name=os.path.join(caiman_datadi
         loaded_model = model_from_json(loaded_model_json)
         loaded_model.load_weights(model_name + '.h5')
         loaded_model.compile('sgd', 'mse')
-        print("Loaded model from disk")
+        logging.info("Loaded model from disk")
     half_crop = np.minimum(
         gSig[0] * 4 + 1, patch_size), np.minimum(gSig[1] * 4 + 1, patch_size)
     dims = np.array(dims)
@@ -364,16 +365,16 @@ def evaluate_components(Y, traces, A, C, b, f, final_frate, remove_baseline=True
     """
     tB = np.minimum(-2, np.floor(-5. / 30 * final_frate))
     tA = np.maximum(5, np.ceil(25. / 30 * final_frate))
-    print('tB:' + str(tB) + ',tA:' + str(tA))
+    logging.debug('tB:' + str(tB) + ',tA:' + str(tA))
     dims, T = np.shape(Y)[:-1], np.shape(Y)[-1]
 
     Yr = np.reshape(Y, (np.prod(dims), T), order='F')
 
-    print('Computing event exceptionality delta')
+    logging.info('Computing event exceptionality delta')
     fitness_delta, erfc_delta, _, _ = compute_event_exceptionality(
         np.diff(traces, axis=1), robust_std=robust_std, N=N, sigma_factor=sigma_factor)
 
-    print('Removing Baseline')
+    logging.debug('Removing Baseline')
     if remove_baseline:
         num_samps_bl = np.minimum(old_div(np.shape(traces)[-1], 5), 800)
         slow_baseline = False
@@ -394,12 +395,12 @@ def evaluate_components(Y, traces, A, C, b, f, final_frate, remove_baseline=True
                 traces.T, ((padbefore, padafter), (0, 0)), mode='reflect')
             numFramesNew, num_traces = np.shape(tr_tmp)
             #% compute baseline quickly
-            print("binning data ...")
+            logging.debug("binning data ...")
             tr_BL = np.reshape(tr_tmp, (downsampfact, int(
                 old_div(numFramesNew, downsampfact)), num_traces), order='F')
             tr_BL = np.percentile(tr_BL, 8, axis=0)
-            print("interpolating data ...")
-            print(tr_BL.shape)
+            logging.info("interpolating data ...")
+            logging.info(tr_BL.shape)
             tr_BL = scipy.ndimage.zoom(np.array(tr_BL, dtype=np.float32), [
                                        downsampfact, 1], order=3, mode='constant', cval=0.0, prefilter=True)
             if padafter == 0:
@@ -407,11 +408,11 @@ def evaluate_components(Y, traces, A, C, b, f, final_frate, remove_baseline=True
             else:
                 traces -= tr_BL[padbefore:-padafter].T
 
-    print('Computing event exceptionality')
+    logging.info('Computing event exceptionality')
     fitness_raw, erfc_raw, _, _ = compute_event_exceptionality(
         traces, robust_std=robust_std, N=N, sigma_factor=sigma_factor)
 
-    print('Evaluating spatial footprint')
+    logging.info('Evaluating spatial footprint')
     # compute the overlap between spatial and movie average across samples with significant events
     r_values, significant_samples = classify_components_ep(Yr, A, C, b, f, Athresh=Athresh, Npeaks=Npeaks, tB=tB,
                                                            tA=tA, thres=thresh_C)
@@ -552,7 +553,7 @@ def select_components_from_metrics(A, dims, gSig, r_values, comp_SNR,
                                    min_SNR=2.5, min_SNR_reject=0.5,
                                    thresh_cnn_min=0.8, thresh_cnn_lowest=0.1,
                                    use_cnn=True, gSig_range=None,
-                                   neuron_class=1, predictions=None):
+                                   neuron_class=1, predictions=None, **kwargs):
     '''Selects components based on pre-computed metrics. For each metric
     space correlation, trace SNR, and CNN classifier both an upper and a lower
     thresholds are considered. A component is accepted if and only if it
@@ -663,8 +664,7 @@ def estimate_components_quality(traces, Y, A, C, b, f, final_frate=30, Npeaks=10
     """
 
     if 'memmap' not in str(type(Y)):
-
-        print('NOT MEMORY MAPPED. FALLING BACK ON SINGLE CORE IMPLEMENTATION')
+        logging.warning('NOT MEMORY MAPPED. FALLING BACK ON SINGLE CORE IMPLEMENTATION')
         fitness_raw, fitness_delta, erfc_raw, erfc_delta, r_values, _ = \
             evaluate_components(Y, traces, A, C, b, f, final_frate, remove_baseline=remove_baseline,
                                 N=N, robust_std=False, Athresh=0.1, Npeaks=Npeaks, thresh_C=0.3)
@@ -686,23 +686,23 @@ def estimate_components_quality(traces, Y, A, C, b, f, final_frate=30, Npeaks=10
                 idx = list(filter(lambda a: a is not None, idx))
                 params.append([Y.filename, traces[idx], A.tocsc()[:, idx], C[idx], b, f,
                                final_frate, remove_baseline, N, robust_std, Athresh, Npeaks, thresh_C])
-    
+
             if dview is None:
                 res = map(evaluate_components_placeholder, params)
             else:
-                print('EVALUATING IN PARALLEL... NOT RETURNING ERFCs')
+                logging.info('EVALUATING IN PARALLEL... NOT RETURNING ERFCs')
                 if 'multiprocessing' in str(type(dview)):
                     res = dview.map_async(
                         evaluate_components_placeholder, params).get(4294967)
                 else:
                     res = dview.map_sync(evaluate_components_placeholder, params)
-    
+
             for r_ in res:
                 fitness_raw__, fitness_delta__, erfc_raw__, erfc_delta__, r_values__, _ = r_
                 fitness_raw = np.concatenate([fitness_raw, fitness_raw__])
                 fitness_delta = np.concatenate([fitness_delta, fitness_delta__])
                 r_values = np.concatenate([r_values, r_values__])
-    
+
                 if len(erfc_raw) == 0:
                     erfc_raw = erfc_raw__
                     erfc_delta = erfc_delta__

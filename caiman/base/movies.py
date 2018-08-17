@@ -18,33 +18,32 @@ See Also:
 # \copyright GNU General Public License v2.0
 # \date Created on Tue Jun 30 20:56:07 2015 , Updated on Fri Aug 19 17:30:11 2016
 
-
-from __future__ import division
-from __future__ import print_function
-
 from builtins import str
 from builtins import range
 from past.utils import old_div
+
 import cv2
+import h5py
+import logging
+from matplotlib import animation
+import numpy as np
 import os
-import sys
+import pickle as cpk
+import pylab as pl
 import scipy.ndimage
 import scipy
-import sklearn
-import warnings
-import numpy as np
-from sklearn.decomposition import NMF, incremental_pca, FastICA
-
-from sklearn.cluster import KMeans
-from sklearn.metrics.pairwise import euclidean_distances
-import h5py
-import pickle as cpk
 from scipy.io import loadmat
-from matplotlib import animation
-import pylab as pl
+from skimage.transform import warp, AffineTransform
+from skimage.feature import match_template
+import sklearn
+from sklearn.cluster import KMeans
+from sklearn.decomposition import NMF, incremental_pca, FastICA
+from sklearn.metrics.pairwise import euclidean_distances
+import sys
 import tifffile
-from skimage.external.tifffile import imread
 from tqdm import tqdm
+import warnings
+
 from . import timeseries
 
 try:
@@ -57,9 +56,6 @@ try:
     HAS_SIMA = True
 except ImportError:
     HAS_SIMA = False
-
-from skimage.transform import warp, AffineTransform
-from skimage.feature import match_template
 
 from . import timeseries as ts
 from .traces import trace
@@ -265,15 +261,15 @@ class movie(ts.timeseries):
         """
         min_val = np.percentile(self, 1)
         if min_val < - 0.1:
-            print(min_val)
+            logging.debug("min_val in extract_shifts: " + str(min_val))
             warnings.warn(
-                '** Pixels averages are too negative. Removing 1 percentile. **')
+                '** Pixel averages are too negative. Removing 1 percentile. **')
             self = self - min_val
         else:
             min_val = 0
 
         if type(self[0, 0, 0]) is not np.float32:
-            warnings.warn('Casting the array to float 32')
+            warnings.warn('Casting the array to float32')
             self = np.asanyarray(self, dtype=np.float32)
 
         _, h_i, w_i = self.shape
@@ -286,7 +282,7 @@ class movie(ts.timeseries):
         else:
             if np.percentile(template, 8) < - 0.1:
                 warnings.warn(
-                    'Pixels averages are too negative for template. Removing 1 percentile.')
+                    'Pixel averages are too negative for template. Removing 1 percentile.')
                 template = template - np.percentile(template, 1)
 
         template = template[ms_h:h_i - ms_h,
@@ -298,7 +294,7 @@ class movie(ts.timeseries):
 
         for i, frame in enumerate(self):
             if i % 100 == 99:
-                print(("Frame %i" % (i + 1)))
+                logging.debug("Frame %i" % (i + 1))
             if method == 'opencv':
                 res = cv2.matchTemplate(frame, template, cv2.TM_CCORR_NORMED)
                 top_left = cv2.minMaxLoc(res)[3]
@@ -364,40 +360,40 @@ class movie(ts.timeseries):
                 interpolation = cv2.INTER_CUBIC
             else:
                 interpolation = 3
-            print('cubic interpolation')
+            logging.debug('cubic interpolation')
 
         elif interpolation == 'nearest':
             if method == 'opencv':
                 interpolation = cv2.INTER_NEAREST
             else:
                 interpolation = 0
-            print('nearest interpolation')
+            logging.debug('nearest interpolation')
 
         elif interpolation == 'linear':
             if method == 'opencv':
                 interpolation = cv2.INTER_LINEAR
             else:
                 interpolation = 1
-            print('linear interpolation')
+            logging.debug('linear interpolation')
         elif interpolation == 'area':
             if method == 'opencv':
                 interpolation = cv2.INTER_AREA
             else:
                 raise Exception('Method not defined')
-            print('area interpolation')
+            logging.debug('area interpolation')
         elif interpolation == 'lanczos4':
             if method == 'opencv':
                 interpolation = cv2.INTER_LANCZOS4
             else:
                 interpolation = 4
-            print('lanczos/biquartic interpolation')
+            logging.debug('lanczos/biquartic interpolation')
         else:
             raise Exception('Interpolation method not available')
 
         _, h, w = self.shape
         for i, frame in enumerate(self):
             if i % 100 == 99:
-                print(("Frame %i" % (i + 1)))
+                logging.debug("Frame %i" % (i + 1))
 
             sh_x_n, sh_y_n = shifts[i]
 
@@ -489,20 +485,20 @@ class movie(ts.timeseries):
         Exception('Unknown method')
         """
 
-        print("computing minimum ...")
+        logging.debug("computing minimum ...")
         sys.stdout.flush()
         if np.min(self) <= 0 and method != 'only_baseline':
             raise ValueError("All pixels must be positive")
 
         numFrames, linePerFrame, pixPerLine = np.shape(self)
         downsampfact = int(secsWindow * self.fr)
-        print(downsampfact)
+        logging.debug("Downsample factor: " + str(downsampfact))
         elm_missing = int(np.ceil(numFrames * 1.0 / downsampfact)
                           * downsampfact - numFrames)
         padbefore = int(np.floor(old_div(elm_missing, 2.0)))
         padafter = int(np.ceil(old_div(elm_missing, 2.0)))
 
-        print(('Inizial Size Image:' + np.str(np.shape(self))))
+        logging.debug('Initial Size Image:' + np.str(np.shape(self)))
         sys.stdout.flush()
         mov_out = movie(np.pad(self.astype(np.float32), ((
             padbefore, padafter), (0, 0), (0, 0)), mode='reflect'), **self.__dict__)
@@ -511,14 +507,14 @@ class movie(ts.timeseries):
         numFramesNew, linePerFrame, pixPerLine = np.shape(mov_out)
 
         #% compute baseline quickly
-        print("binning data ...")
+        logging.debug("binning data ...")
         sys.stdout.flush()
         movBL = np.reshape(mov_out.copy(), (downsampfact, int(
             old_div(numFramesNew, downsampfact)), linePerFrame, pixPerLine), order=order)
         movBL = np.percentile(movBL, quantilMin, axis=0)
-        print("interpolating data ...")
+        logging.debug("interpolating data ...")
         sys.stdout.flush()
-        print((movBL.shape))
+        logging.debug("movBL shape is " + str(movBL.shape))
         movBL = scipy.ndimage.zoom(np.array(movBL, dtype=np.float32), [
                                    downsampfact, 1, 1], order=1, mode='constant', cval=0.0, prefilter=False)
 #        movBL = movie(movBL).resize(1,1,downsampfact, interpolation = 4)
@@ -534,7 +530,7 @@ class movie(ts.timeseries):
             raise Exception('Unknown method')
 
         mov_out = mov_out[padbefore:len(movBL) - padafter, :, :]
-        print(('Final Size Movie:' + np.str(self.shape)))
+        logging.debug('Final Size Movie:' + np.str(self.shape))
         return mov_out, movie(movBL, fr=self.fr, start_time=self.start_time, meta_data=self.meta_data, file_name=self.file_name)
 
     def NonnegativeMatrixFactorization(self, n_components=30, init='nndsvd', beta=1, tol=5e-7, sparseness='components', **kwargs):
@@ -585,9 +581,9 @@ class movie(ts.timeseries):
         space_comps
         """
         try:
-            import spams
+            import spams # XXX consider moving this to the head of the file
         except:
-            print("You need to install the SPAMS package")
+            logging.error("You need to install the SPAMS package")
             raise
 
         T, d1, d2 = np.shape(self)
@@ -769,7 +765,7 @@ class movie(ts.timeseries):
 
             n_chunks = T // frames_per_chunk
             for jj, mv in enumerate(range(n_chunks - 1)):
-                print('number of chunks:' + str(jj) + ' frames: ' +
+                logging.debug('number of chunks:' + str(jj) + ' frames: ' +
                       str([mv * frames_per_chunk, (mv + 1) * frames_per_chunk]))
                 rho = si.local_correlations(np.array(self[mv * frames_per_chunk:(mv + 1) * frames_per_chunk]),
                                             eight_neighbours=eight_neighbours, swap_dim=swap_dim, order_mean=order_mean)
@@ -777,7 +773,7 @@ class movie(ts.timeseries):
                 pl.imshow(Cn, cmap='gray')
                 pl.pause(.1)
 
-            print('number of chunks:' + str(n_chunks - 1) +
+            logging.debug('number of chunks:' + str(n_chunks - 1) +
                   ' frames: ' + str([(n_chunks - 1) * frames_per_chunk, T]))
             rho = si.local_correlations(np.array(self[(n_chunks - 1) * frames_per_chunk:]), eight_neighbours=eight_neighbours,
                                         swap_dim=swap_dim, order_mean=order_mean)
@@ -863,9 +859,9 @@ class movie(ts.timeseries):
         if elm > max_els:
             chunk_size = old_div((max_els), d)
             new_m = []
-            print('Resizing in chunks because of opencv bug')
+            logging.debug('Resizing in chunks because of opencv bug')
             for chunk in range(0, T, chunk_size):
-                print([chunk, np.minimum(chunk + chunk_size, T)])
+                logging.debug([chunk, np.minimum(chunk + chunk_size, T)])
                 m_tmp = self[chunk:np.minimum(chunk + chunk_size, T)].copy()
                 m_tmp = m_tmp.resize(fx=fx, fy=fy, fz=fz,
                                      interpolation=interpolation)
@@ -877,17 +873,17 @@ class movie(ts.timeseries):
             return new_m
         else:
             if fx != 1 or fy != 1:
-                print("reshaping along x and y")
+                logging.debug("reshaping along x and y")
                 t, h, w = self.shape
                 newshape = (int(w * fy), int(h * fx))
                 mov = []
-                print(newshape)
+                logging.debug("New shape is " + str(newshape))
                 for frame in self:
                     mov.append(cv2.resize(frame, newshape, fx=fx,
                                           fy=fy, interpolation=interpolation))
                 self = movie(np.asarray(mov), **self.__dict__)
             if fz != 1:
-                print("reshaping along z")
+                logging.debug("reshaping along z")
                 t, h, w = self.shape
                 self = np.reshape(self, (t, h * w))
                 mov = cv2.resize(self, (h * w, int(fz * t)),
@@ -904,7 +900,7 @@ class movie(ts.timeseries):
         """
         for idx, fr in enumerate(self):
             if idx % 1000 == 0:
-                print(idx)
+                logging.debug("At index: " + str(idx))
             self[idx] = cv2.ximgproc.guidedFilter(
                 guide_filter, fr, radius=radius, eps=eps)
 
@@ -920,7 +916,7 @@ class movie(ts.timeseries):
 
         for idx, fr in enumerate(self):
             if idx % 1000 == 0:
-                print(idx)
+                logging.debug("At index: " + str(idx))
             self[idx] = cv2.bilateralFilter(
                 fr, diameter, sigmaColor, sigmaSpace)
 
@@ -946,7 +942,7 @@ class movie(ts.timeseries):
         """
 
         for idx, fr in enumerate(self):
-            print(idx)
+            logging.debug(idx)
             self[idx] = cv2.GaussianBlur(fr, ksize=(kernel_size_x, kernel_size_y), sigmaX=kernel_std_x, sigmaY=kernel_std_y,
                                          borderType=borderType)
 
@@ -974,14 +970,14 @@ class movie(ts.timeseries):
         """
 
         for idx, fr in enumerate(self):
-            print(idx)
+            logging.debug(idx)
             self[idx] = cv2.medianBlur(fr, ksize=kernel_size)
 
         return self
 
     def resample(self):
-        # FIXME what is this?
-        print((1))
+        # FIXME what is this function used for?
+        pass
 
     def to_2D(self, order='F'):
         [T, d1, d2] = self.shape
@@ -1016,27 +1012,6 @@ class movie(ts.timeseries):
         pl.imshow(zp, cmap=cmap, aspect=aspect, **kwargs)
         return zp
 
-
-
-    def local_correlations_movie(self, file_name = None, window=10, swap_dim=True, eight_neighbours=True, order_mean = 1, dview = None):
-        T, _, _ = self.shape
-        params = [[file_name,range(j,j + window), eight_neighbours, swap_dim, order_mean] for j in range(T - window)]
-        if dview is None:
-            parallel_result = [self[j:j + window, :, :].local_correlations(
-                    eight_neighbours=True,swap_dim=swap_dim, order_mean=order_mean)[np.newaxis, :, :] for j in range(T - window)]
-        else:
-            if 'multiprocessing' in str(type(dview)):
-                parallel_result = dview.map_async(
-                        local_correlations_movie_parallel, params).get(4294967)
-            else:
-                parallel_result = dview.map_sync(
-                    local_correlations_movie_parallel, params)
-                dview.results.clear()
-
-        mm = movie(np.concatenate(parallel_result, axis=0),fr=self.fr)
-        return mm
-
-
     def play(self, gain=1, fr=None, magnification=1, offset=0, interpolation=cv2.INTER_LINEAR,
              backend='opencv', do_loop=False, bord_px=None, q_max=100, q_min = 0, plot_text = False):
         """
@@ -1056,7 +1031,7 @@ class movie(ts.timeseries):
         """
         # todo: todocument
         if backend == 'pylab':
-            print('*** WARNING *** SPEED MIGHT BE LOW. USE opencv backend if available')
+            logging.warning('*** WARNING *** SPEED MIGHT BE LOW. USE opencv backend if available')
 
         gain *= 1.
         if q_max < 100:
@@ -1074,7 +1049,7 @@ class movie(ts.timeseries):
             fig = pl.figure(1)
             ax = fig.add_subplot(111)
             ax.set_title("Play Movie")
-            im = ax.imshow((offset + self[0]) * gain / (maxmov + offset), cmap=pl.cm.gray,
+            im = ax.imshow((offset + self[0] - minmov) * gain / (maxmov - minmov + offset), cmap=pl.cm.gray,
                            vmin=0, vmax=1, interpolation='none')  # Blank starting image
             fig.show()
             im.axes.figure.canvas.draw()
@@ -1113,7 +1088,7 @@ class movie(ts.timeseries):
                     if magnification != 1:
                         frame = cv2.resize(
                             frame, None, fx=magnification, fy=magnification, interpolation=interpolation)
-                    frame = (offset + frame) * gain / maxmov
+                    frame = (offset + frame - minmov) * gain /(maxmov - minmov)
 
                     if plot_text == True:
                         text_width, text_height = cv2.getTextSize('Frame = ' + str(iddxx), fontFace=5, fontScale = 0.8, thickness=1)[0]
@@ -1140,7 +1115,7 @@ class movie(ts.timeseries):
                         break
 
                 elif backend == 'notebook':
-                    print('Animated via MP4')
+                    logging.debug('Animated via MP4')
                     break
 
                 else:
@@ -1196,7 +1171,7 @@ def load(file_name,fr=30,start_time=0,meta_data=None,subindices=None,shape=None,
 
     Returns:
     -------
-    mov: calblitz.movie
+    mov: caiman.movie
 
     Raise:
     -----
@@ -1236,45 +1211,70 @@ def load(file_name,fr=30,start_time=0,meta_data=None,subindices=None,shape=None,
                     else:
                         input_arr  = tffl.asarray(key=subindices)
 
-#                    elif type(subindices) is range:
-#                        subidx = slice(subindices.start, subindices.stop,
-#                                       subindices.step)
-#                        input_arr = imread(file_name)[subidx]
-#                    else:
-#                        input_arr = imread(file_name)[subindices]
                 else:
                     input_arr = tffl.asarray()
 
                 input_arr = np.squeeze(input_arr)
 
         elif extension == '.avi':  # load avi file
-            if subindices is not None:
-                raise Exception('Subindices not implemented')
             cap = cv2.VideoCapture(file_name)
+                
             try:
                 length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
                 width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
                 height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
             except:
-                print('Roll back top opencv 2')
+                logging.info('Roll back to opencv 2')
                 length = int(cap.get(cv2.cv.CV_CAP_PROP_FRAME_COUNT))
                 width = int(cap.get(cv2.cv.CV_CAP_PROP_FRAME_WIDTH))
                 height = int(cap.get(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT))
 
             cv_failed = False
+            dims = [length, height, width]
             if length == 0 or width == 0 or height == 0: #CV failed to load
-                cv_failed = True
+                cv_failed = True            
+            if subindices is not None:
+                if type(subindices) is not list:
+                    subindices = [subindices]
+                for ind, sb in enumerate(subindices):
+                    if type(sb) is range:
+                        subindices[ind] = np.r_[sb]
+                        dims[ind] = subindices[ind].shape[0]
+                    elif type(sb) is slice:
+                        if sb.start is None:
+                            sb = slice(0, sb.stop, sb.step)
+                        if sb.stop is None:
+                            sb = slice(sb.start, dims[ind], sb.step)
+                        subindices[ind] = np.r_[sb]
+                        dims[ind] = subindices[ind].shape[0]
+                    elif type(sb) is np.ndarray:
+                        dims[ind] = sb.shape[0]
 
+                start_frame = subindices[0][0]
+            else:
+                subindices = [np.r_[range(dims[0])]]
+                start_frame = 0
             if not cv_failed:
-                input_arr = np.zeros((length, height, width), dtype=np.uint8)
+                input_arr = np.zeros((dims[0], height, width), dtype=np.uint8)
                 counter = 0
-                while True:
+                cap.set(1, start_frame)
+                current_frame = start_frame
+                while True and counter < dims[0]:
                     # Capture frame-by-frame
+                    if current_frame != subindices[0][counter]:
+                        current_frame = subindices[0][counter]
+                        cap.set(1, current_frame)
                     ret, frame = cap.read()
                     if not ret:
                         break
                     input_arr[counter] = frame[:, :, 0]
-                    counter = counter + 1
+                    counter += 1
+                    current_frame += 1
+
+                if len(subindices) > 1:
+                    input_arr = input_arr[:, subindices[1]]
+                if len(subindices) > 2:
+                    input_arr = input_arr[:, :, subindices[2]]
             else: #use pims to load movie
                 import pims
                 def rgb2gray(rgb):
@@ -1322,17 +1322,16 @@ def load(file_name,fr=30,start_time=0,meta_data=None,subindices=None,shape=None,
             with np.load(file_name) as f:
                 return movie(**f).astype(outtype)
 
-        elif extension == '.hdf5':
-
-            with h5py.File(file_name, "r") as f:
-                attrs = dict(f[var_name_hdf5].attrs)
-                if meta_data in attrs:
-                    attrs['meta_data'] = cpk.loads(attrs['meta_data'])
-
-                if subindices is None:
-                    return movie(f[var_name_hdf5], **attrs).astype(outtype)
-                else:
-                    return movie(f[var_name_hdf5][subindices], **attrs).astype(outtype)
+#        elif extension in ('.hdf5', '.h5'):
+#            with h5py.File(file_name, "r") as f:
+#                attrs = dict(f[var_name_hdf5].attrs)
+#                if meta_data in attrs:
+#                    attrs['meta_data'] = cpk.loads(attrs['meta_data'])
+#
+#                if subindices is None:
+#                    return movie(f[var_name_hdf5], **attrs).astype(outtype)
+#                else:
+#                    return movie(f[var_name_hdf5][subindices], **attrs).astype(outtype)
 
         elif extension == '.h5_at':
             with h5py.File(file_name, "r") as f:
@@ -1341,21 +1340,24 @@ def load(file_name,fr=30,start_time=0,meta_data=None,subindices=None,shape=None,
                 else:
                     return movie(f['quietBlock'][subindices], fr=fr).astype(outtype)
 
-        elif extension == '.h5':
+        elif extension in ('.hdf5', '.h5'):
             if is_behavior:
                 with h5py.File(file_name, "r") as f:
                     kk = list(f.keys())
                     kk.sort(key=lambda x: np.int(x.split('_')[-1]))
                     input_arr = []
                     for trial in kk:
-                        print('Loading ' + trial)
+                        logging.info('Loading ' + trial)
                         input_arr.append(np.array(f[trial]['mov']))
 
                     input_arr = np.vstack(input_arr)
 
             else:
                 with h5py.File(file_name, "r") as f:
-                    if var_name_hdf5 in f.keys():
+                    fkeys = list(f.keys())
+                    if len(fkeys) == 1:
+                        var_name_hdf5 = fkeys[0]
+                    if var_name_hdf5 in fkeys:
                         if subindices is None:
                             images = np.array(f[var_name_hdf5]).squeeze()
                             if images.ndim > 3:
@@ -1369,7 +1371,7 @@ def load(file_name,fr=30,start_time=0,meta_data=None,subindices=None,shape=None,
                         #input_arr = images
                         return movie(images.astype(outtype))
                     else:
-                        print('KEYS:'+str(f.keys()))
+                        logging.debug('KEYS:' + str(f.keys()))
                         raise Exception('Key not found in hdf5n file')
 
         elif extension == '.mmap':
@@ -1382,17 +1384,17 @@ def load(file_name,fr=30,start_time=0,meta_data=None,subindices=None,shape=None,
                 images = images[subindices]
 
             if in_memory:
-                print('loading in memory')
+                logging.debug('loading in memory')
                 images = np.array(images).astype(outtype)
 
-            print('mmap')
+            logging.debug('mmap')
             return movie(images, fr=fr)
 
         elif extension == '.sbx':
             if subindices is not None:
                 return movie(sbxreadskip(file_name[:-4], skip=subindices.step), fr=fr).astype(outtype)
             else:
-                print('sbx')
+                logging.debug('sbx')
                 return movie(sbxread(file_name[:-4], k=0, n_frames=np.inf), fr=fr).astype(outtype)
 
         elif extension == '.sima':
@@ -1416,8 +1418,7 @@ def load(file_name,fr=30,start_time=0,meta_data=None,subindices=None,shape=None,
         else:
             raise Exception('Unknown file type')
     else:
-        print('File is:')
-        print(file_name)
+        logging.error('File request:[' + str(file_name) + "] not found!")
         raise Exception('File not found!')
 
     return movie(input_arr.astype(outtype), fr=fr, start_time=start_time, file_name=os.path.split(file_name)[-1], meta_data=meta_data)
@@ -1453,9 +1454,9 @@ def load_movie_chain(file_list, fr=30, start_time=0,
         m = load(f, fr=fr, start_time=start_time,
                  meta_data=meta_data, subindices=subindices, in_memory=True, outtype=outtype)
         if channel is not None:
-            print(m.shape)
+            logging.debug(m.shape)
             m = m[channel].squeeze()
-            print(m.shape)
+            logging.debug("Movie shape: " + str(m.shape))
 
         if not is3D:
             if m.ndim == 2:
@@ -1657,9 +1658,4 @@ def to_3D(mov2D, shape, order='F'):
     return np.reshape(mov2D, shape, order=order)
 
 
-def local_correlations_movie_parallel(params):
 
-        import caiman as cm
-        mv_name, idx, eight_neighbours, swap_dim, order_mean = params
-        mv = cm.load(mv_name,subindices=idx)
-        return mv.local_correlations(eight_neighbours=eight_neighbours, swap_dim=swap_dim, order_mean=order_mean)[None,:,:].astype(np.float32)

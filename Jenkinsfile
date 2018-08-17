@@ -3,37 +3,13 @@ pipeline {
   options {
     disableConcurrentBuilds()
     buildDiscarder(logRotator(numToKeepStr: '10', daysToKeepStr: '15'))
-    timeout(time: 2, unit: 'HOURS')
+    timeout(time: 1, unit: 'HOURS')
     retry(3)
     timestamps()
   }
   stages {
     stage('test') {
       parallel {
-        stage('linux-python2') {
-          agent {
-            dockerfile {
-              dir "test/linux-python2"
-              args '-v /etc/passwd:/etc/passwd -v /etc/group:/etc/group -v /home/jenkins/.conda2/pkgs:/home/jenkins/.conda/pkgs:rw,z'
-            }
-          }
-          environment {
-            CONDA_ENV = "${env.WORKSPACE}/test/${env.STAGE_NAME}"
-          }
-          steps {
-            sh 'conda env create -q -f environment_python2.yml -p $CONDA_ENV'
-            sh '''#!/bin/bash -ex
-              source $CONDA_ENV/bin/activate $CONDA_ENV
-              pip install .
-              TEMPDIR=$(mktemp -d)
-              export CAIMAN_DATA=$TEMPDIR/caiman_data
-              cd $TEMPDIR
-              caimanmanager.py install
-              nosetests --traverse-namespace caiman
-              caimanmanager.py demotest
-            '''
-          }
-        }
         stage('linux-python3') {
           agent {
             dockerfile {
@@ -59,26 +35,6 @@ pipeline {
           }
         }
 
-        stage('osx-python2') {
-          agent {
-            label 'osx && anaconda2'
-          }
-          environment {
-            CONDA_ENV = "${env.WORKSPACE}/test/${env.STAGE_NAME}"
-          }
-          steps {
-            sh '$ANACONDA2/bin/conda env create -q -f environment_python2.yml -p $CONDA_ENV'
-            sh '''#!/bin/bash -ex
-              source $ANACONDA2/bin/activate $CONDA_ENV
-              pip install .
-              TEMPDIR=$(mktemp -d)
-              export CAIMAN_DATA=$TEMPDIR/caiman_data
-              cd $TEMPDIR
-              caimanmanager.py install
-              nosetests --traverse-namespace caiman
-            '''
-          }
-        }
         stage('osx-python3') {
           agent {
             label 'osx && anaconda3'
@@ -101,20 +57,20 @@ pipeline {
           }
         }
 
-        /* stage('win-python3') {
+	// With the CONDA_ENV variable on windows, you must be careful not to hit the maximum path length. 
+        stage('win-python3') {
           agent {
             label 'windows && anaconda3'
           }
           environment {
-            ANACONDA = "C:\\ProgramData\\Anaconda3"
-            CONDA_ENV = "${env.WORKSPACE}\\test\\${env.STAGE_NAME}"
+            CONDA_ENV = "${env.WORKSPACE}\\conda-envinst"
           }
           steps {
-            bat '%ANACONDA%\\scripts\\conda info'
-            bat '%ANACONDA%\\scripts\\conda env create -q -f environment.yml -p %CONDA_ENV%'
-            bat '%CONDA_ENV%\\scripts\\activate %CONDA_ENV% && pip install . && copy caimanmanager.py %TEMP% && cd %TEMP% && set "CAIMAN_DATA=%TEMP%\\caiman_data" && (if exist caiman_data (rmdir caiman_data /s /q) else (echo "Host is fresh")) && python caimanmanager.py install && python caimanmanager.py test'
+            bat '%ANACONDA3%\\scripts\\conda info'
+            bat '%ANACONDA3%\\scripts\\conda env create -q -f environment.yml -p %CONDA_ENV%'
+            bat '%ANACONDA3%\\scripts\\activate %CONDA_ENV% && pip install . && copy caimanmanager.py %TEMP% && cd %TEMP% && set "CAIMAN_DATA=%TEMP%\\caiman_data" && (if exist caiman_data (rmdir caiman_data /s /q && echo "Removed old caiman_data" ) else (echo "Host is fresh")) && python caimanmanager.py install --force && python caimanmanager.py test'
           }
-        } */
+        }
       }
     }
   }
@@ -138,7 +94,7 @@ ${BUILD_LOG,maxLines=60}
 		 [$class: 'DevelopersRecipientProvider'],
 	       ], 
 	       replyTo: '$DEFAULT_REPLYTO',
-	       to: 'epnevmatikakis@gmail.com, andrea.giovannucci@gmail.com, dsimon@flatironinstitute.org, pgunn@flatironinstitute.org'
+	       to: 'epnevmatikakis@gmail.com, andrea.giovannucci@gmail.com, pgunn@flatironinstitute.org'
     }
   }
 }

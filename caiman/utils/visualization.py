@@ -8,27 +8,30 @@
 #\copyright GNU General Public License v2.0
 #\date Created on Tue Jun 30 21:01:17 2016
 #\author: andrea giovannucci
-from __future__ import division
-from __future__ import print_function
+
 from builtins import str
 from builtins import range
 from past.utils import old_div
+
 import base64
 import cv2
+from IPython.display import HTML
+from math import sqrt, ceil
+import matplotlib as mpl
+import matplotlib.cm as cm
+from matplotlib.widgets import Slider
 import numpy as np
 import pylab as pl
-from tempfile import NamedTemporaryFile
-from IPython.display import HTML
-import sys
-from warnings import warn
-from scipy.sparse import issparse, spdiags, coo_matrix, csc_matrix
-from matplotlib.widgets import Slider
-from ..base.rois import com
 from scipy.ndimage.measurements import center_of_mass
 from scipy.ndimage.filters import median_filter
-import matplotlib.cm as cm
-import matplotlib as mpl
-from math import sqrt, ceil
+from scipy.sparse import issparse, spdiags, coo_matrix, csc_matrix
+from skimage.measure import find_contours
+import sys
+from tempfile import NamedTemporaryFile
+from warnings import warn
+
+from ..base.rois import com
+from ..summary_images import local_correlations
 
 try:
     cv2.setNumThreads(0)
@@ -41,9 +44,6 @@ try:
     from bokeh.models import CustomJS, ColumnDataSource, Range1d
 except:
     print("Bokeh could not be loaded. Either it is not installed or you are not running within a notebook")
-
-from ..summary_images import local_correlations
-from skimage.measure import find_contours
 
 
 #%%
@@ -671,7 +671,8 @@ def nb_imshow(image, cmap='jet'):
 
 
 def nb_plot_contour(image, A, d1, d2, thr=None, thr_method='max', maxthr=0.2, nrgthr=0.9,
-                    face_color=None, line_color='black', alpha=0.4, line_width=2, **kwargs):
+                    face_color=None, line_color='black', alpha=0.4, line_width=2,
+                    coordinates=None, **kwargs):
     """Interactive Equivalent of plot_contours for ipython notebook
 
     Parameters:
@@ -715,7 +716,8 @@ def nb_plot_contour(image, A, d1, d2, thr=None, thr_method='max', maxthr=0.2, nr
     p.circle(center[:, 1], center[:, 0], size=10, color="black",
              fill_color=None, line_width=2, alpha=1)
     coors = plot_contours(coo_matrix(A), image, thr=thr,
-                          thr_method=thr_method, maxthr=maxthr, nrgthr=nrgthr)
+                          thr_method=thr_method, maxthr=maxthr, nrgthr=nrgthr,
+                          coordinates=coordinates)
     pl.close()
     cc1 = [np.clip(cor['coordinates'][:, 0], 0, d2) for cor in coors]
     cc2 = [np.clip(cor['coordinates'][:, 1], 0, d1) for cor in coors]
@@ -811,11 +813,9 @@ def view_patches_bar(Yr, A, C, b, f, d1, d2, YrA=None, img=None):
     pl.ion()
     if 'csc_matrix' not in str(type(A)):
         A = csc_matrix(A)
-    if 'array' not in str(type(b)):
-        b = b.toarray()
 
     nr, T = C.shape
-    nb = f.shape[0]
+    nb = 0 if f is None else f.shape[0]
     nA2 = np.sqrt(np.array(A.power(2).sum(axis=0))).squeeze()
 
     if YrA is None:
@@ -898,7 +898,7 @@ def view_patches_bar(Yr, A, C, b, f, d1, d2, YrA=None, img=None):
 
 
 def plot_contours(A, Cn, thr=None, thr_method='max', maxthr=0.2, nrgthr=0.9, display_numbers=True, max_number=None,
-                  cmap=None, swap_dim=False, colors='w', vmin=None, vmax=None, **kwargs):
+                  cmap=None, swap_dim=False, colors='w', vmin=None, vmax=None, coordinates=None, **kwargs):
     """Plots contour of spatial components against a background image and returns their coordinates
 
      Parameters:
@@ -935,7 +935,7 @@ def plot_contours(A, Cn, thr=None, thr_method='max', maxthr=0.2, nrgthr=0.9, dis
 
      Returns:
      --------
-     Coor: list of coordinates with center of mass, contour plot coordinates and bounding box for each component
+     coordinates: list of coordinates with center of mass, contour plot coordinates and bounding box for each component
     """
 
     if swap_dim:
@@ -949,8 +949,7 @@ def plot_contours(A, Cn, thr=None, thr_method='max', maxthr=0.2, nrgthr=0.9, dis
             thr = maxthr
     else:
         thr_method = 'nrg'
-        warn("The way to call utilities.plot_contours has changed. " +
-             "Look at the definition for more details.")
+
 
     ax = pl.gca()
     if vmax is None and vmin is None:
@@ -960,7 +959,8 @@ def plot_contours(A, Cn, thr=None, thr_method='max', maxthr=0.2, nrgthr=0.9, dis
     else:
         pl.imshow(Cn, interpolation=None, cmap=cmap, vmin=vmin, vmax=vmax)
 
-    coordinates = get_contours(A, np.shape(Cn), thr, thr_method, swap_dim)
+    if coordinates is None:
+        coordinates = get_contours(A, np.shape(Cn), thr, thr_method, swap_dim)
     for c in coordinates:
         v = c['coordinates']
         c['bbox'] = [np.floor(np.nanmin(v[:, 1])), np.ceil(np.nanmax(v[:, 1])),

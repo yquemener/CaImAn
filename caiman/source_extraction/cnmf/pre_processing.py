@@ -20,14 +20,11 @@ See Also:
 #\date Created on Tue Jun 30 21:01:17 2015
 
 
-from __future__ import division
-from __future__ import print_function
-
+import numpy as np
+import scipy
 import shutil
 import tempfile
 
-import numpy as np
-import scipy
 from builtins import map
 from builtins import range
 from ...mmapping import load_memmap
@@ -265,9 +262,7 @@ def get_noise_fft_parallel(Y, n_pixels_per_process=100, dview=None, **kwargs):
 
     else:
         if dview is not None:
-            raise Exception(
-                'ipyparallel backend only works with memory mapped files')
-
+            raise Exception('parallel processing requires memory mapped files')
         Y_name = Y
 
     argsin = [(Y_name, i, n_pixels_per_process, kwargs) for i in pixel_groups]

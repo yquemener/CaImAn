@@ -7,8 +7,6 @@ Created on Wed Aug 05 20:38:27 2015
 @author: agiovann
 """
 
-from __future__ import division
-from __future__ import print_function
 # noinspection PyCompatibility
 from past.builtins import basestring
 from builtins import zip
@@ -44,11 +42,17 @@ def basis_denoising(y, c, boh, sn, id2_, px):
 #%% update_spatial_components (in parallel)
 
 
-def update_spatial_components(Y, C=None, f=None, A_in=None, sn=None, dims=None, min_size=3, max_size=8, dist=3, normalize_yyt_one=True,
-                              method='ellipse', expandCore=None, dview=None, n_pixels_per_process=128,
-                              medw=(3, 3), thr_method='nrg', maxthr=0.1, nrgthr=0.9999, extract_cc=True, b_in=None,
-                              se=np.ones((3, 3), dtype=np.int), ss=np.ones((3, 3), dtype=np.int), nb=1,
-                              method_ls='lasso_lars', update_background_components=True, low_rank_background=True, block_size=1000, num_blocks_per_run=20):
+def update_spatial_components(Y, C=None, f=None, A_in=None, sn=None, dims=None,
+                              min_size=3, max_size=8, dist=3,
+                              normalize_yyt_one=True, method_exp='dilate',
+                              expandCore=None, dview=None, n_pixels_per_process=128,
+                              medw=(3, 3), thr_method='max', maxthr=0.1,
+                              nrgthr=0.9999, extract_cc=True, b_in=None,
+                              se=np.ones((3, 3), dtype=np.int),
+                              ss=np.ones((3, 3), dtype=np.int), nb=1,
+                              method_ls='lasso_lars', update_background_components=True, 
+                              low_rank_background=True, block_size=1000,
+                              num_blocks_per_run=20):
     """update spatial footprints and background through Basis Pursuit Denoising
 
     for each pixel i solve the problem
@@ -116,7 +120,6 @@ def update_spatial_components(Y, C=None, f=None, A_in=None, sn=None, dims=None, 
         method to perform the regression for the basis pursuit denoising.
              'nnls_L0'. Nonnegative least square with L0 penalty
              'lasso_lars' lasso lars function from scikit learn
-             'lasso_lars_old' lasso lars from old implementation, will be deprecated
 
         normalize_yyt_one: bool
             wheter to norrmalize the C and A matrices so that diag(C*C.T) are ones
@@ -180,7 +183,7 @@ def update_spatial_components(Y, C=None, f=None, A_in=None, sn=None, dims=None, 
     print('computing the distance indicators')
     # we compute the indicator from distance indicator
     ind2_, nr, C, f, b_, A_in = computing_indicator(
-        Y, A_in, b_in, C, f, nb, method, dims, min_size, max_size, dist, expandCore, dview)
+        Y, A_in, b_in, C, f, nb, method_exp, dims, min_size, max_size, dist, expandCore, dview)
     if normalize_yyt_one and C is not None:
         C = np.array(C)
         nr_C = np.shape(C)[0]
@@ -327,7 +330,6 @@ def regression_ipyparallel(pars):
            method to perform the regression for the basis pursuit denoising.
                 'nnls_L0'. Nonnegative least square with L0 penalty
                 'lasso_lars' lasso lars function from scikit learn
-                'lasso_lars_old' lasso lars from old implementation, will be deprecated
 
 
 
@@ -378,8 +380,8 @@ def regression_ipyparallel(pars):
 
         if np.size(c) > 0:
             sn = noise_sn[px] ** 2 * T
-            if method_least_square == 'lasso_lars_old':  # lasso lars from old implementation, will be deprecated
-                a = lars_regression_noise_old(y, c.T, 1, sn)[2]
+            if method_least_square == 'lasso_lars_old':
+                raise Exception("Obsolete parameter") # Old code, support was removed
 
             elif method_least_square == 'nnls_L0':  # Nonnegative least square with L0 penalty
                 a = nnls_L0(c.T, y, 1.2 * sn)
@@ -474,7 +476,7 @@ def construct_ellipse_parallel(pars):
 # %% threshold_components
 
 
-def threshold_components(A, dims, medw=None, thr_method='nrg', maxthr=0.1, nrgthr=0.9999, extract_cc=True,
+def threshold_components(A, dims, medw=None, thr_method='max', maxthr=0.1, nrgthr=0.9999, extract_cc=True,
                          se=None, ss=None, dview=None):
     """
     Post-processing of spatial components which includes the following steps
@@ -692,215 +694,6 @@ def nnls_L0(X, Yp, noise):
             return W_lam
         else:
             W_lam[eliminate[np.argmin(np.array(eliminate)[:, 1])][0]] = 0
-
-
-# %% lars_regression_noise
-def lars_regression_noise_old(Yp, X, positive, noise, verbose=False):
-    """
-     Run LARS for regression problems with LASSO penalty, with optional positivity constraints
-     Author: Andrea Giovannucci. Adapted code from Eftychios Pnevmatikakis
-
-
-     Parameters:
-        -------
-       Yp:          Yp[:,t] is the observed data at time t
-
-       X:           the regresion problem is Yp=X*W + noise
-
-       maxcomps:    maximum number of active components to allow
-
-       positive:    a flag to enforce positivity
-
-       noise:       the noise of the observation equation. if it is not
-                    provided as an argument, the noise is computed from the
-                    variance at the end point of the algorithm. The noise is
-                    used in the computation of the Cp criterion.
-
-     Returns:
-    -------
-       Ws: weights from each iteration
-       lambdas: lambda_ values at each iteration
-
-       Cps: C_p estimates
-       last_break:     last_break(m) == n means that the last break with m non-zero weights is at Ws(:,:,n)
-
-    See Also:
-    -------
-        LARS : https://en.wikipedia.org/wiki/Least-angle_regression
-        group Lasso :
-    """
-    # INITAILIZATION
-    T = len(Yp)  # of time steps
-    k = 1
-    Yp = np.squeeze(np.asarray(Yp))
-    # necessary for matrix multiplications
-    Yp = np.expand_dims(Yp, axis=1)
-    _, T = np.shape(Yp)  # of time steps
-    _, N = np.shape(X)  # of compartments
-
-    # 1 : Start with all Weights equal to zero.
-    maxcomps = N
-    W = np.zeros((N, k))
-    active_set = np.zeros((N, k))
-    visited_set = np.zeros((N, k))
-    lambdas = []
-    #  Just preallocation. Ws may end with more or less than maxcomp columns
-    Ws = []
-    r = np.expand_dims(np.dot(X.T, Yp.flatten()), axis=1)  # N-dim vector
-    M = np.dot(-X.T, X)  # N x N matrix
-
-    # %% begin main loop
-    i = 0
-    flag = 0
-    while 1:
-        if flag == 1:
-            W_lam = 0
-            break
-            # % calculate new gradient component if necessary
-        if i > 0 and new >= 0 and visited_set[new] == 0:  # AG NOT CLEAR HERE
-            visited_set[new] = 1  # % remember this direction was computed
-        # % Compute full gradient of Q
-        dQ = r + np.dot(M, W)
-
-        # % Compute new W
-        if i == 0:
-            if positive:
-                dQa = dQ
-            else:
-                dQa = np.abs(dQ)
-            lambda_, new = np.max(dQa), np.argmax(dQa)
-
-            if lambda_ < 0:
-                print('All negative directions!')
-                break
-        else:  # 2 : Find the predictor x_{j} most correlated with y
-
-            # % calculate vector to travel along
-            avec, gamma_plus, gamma_minus = calcAvec(
-                new, dQ, W, lambda_, active_set, M, positive)
-            # % calculate time of travel and next new direction
-            if new == -1:  # % if we just dropped a direction we don't allow it to emerge
-                if dropped_sign == 1:  # % with the same sign
-                    gamma_plus[dropped] = np.inf
-                else:
-                    gamma_minus[dropped] = np.inf
-            # 3 : Increase the coefficient W in the direction of the sign of its correlation with y
-            # % don't consider active components
-            gamma_plus[active_set == 1] = np.inf
-            # % or components outside the range [0, lambda_]
-            gamma_plus[gamma_plus <= 0] = np.inf
-            gamma_plus[gamma_plus > lambda_] = np.inf
-            gp_min, gp_min_ind = np.min(gamma_plus), np.argmin(gamma_plus)
-
-            if positive:
-                gm_min = np.inf  # % don't consider new directions that would grow negative
-            else:
-                gamma_minus[active_set == 1] = np.inf
-                gamma_minus[gamma_minus > lambda_] = np.inf
-                gamma_minus[gamma_minus <= 0] = np.inf
-                gm_min, gm_min_ind = np.min(
-                    gamma_minus), np.argmin(gamma_minus)
-
-            [g_min, which] = np.min(gp_min), np.argmin(gp_min)
-# % if there are no possible new components, try move to the end
-            if g_min == np.inf:
-                g_min = lambda_
-# % This happens when all the components are already active or, if positive==1,
-# when there are no new positive directions
-
-            # % LARS check  (is g_min*avec too large?)
-            gamma_zero = old_div(-W[active_set == 1], np.squeeze(avec))
-            gamma_zero_full = np.zeros((N, k))
-            gamma_zero_full[active_set == 1] = gamma_zero
-            gamma_zero_full[gamma_zero_full <= 0] = np.inf
-            gz_min, gz_min_ind = np.min(
-                gamma_zero_full), np.argmin(gamma_zero_full)
-            # 4: Increase Wj,Wk in their joint least squares direction, until some other predictor x_{m}
-            # has as much correlation with the residual r. (see 5)
-            if gz_min < g_min:
-                if verbose:
-                    print(('DROPPING active weight:' + str(gz_min_ind)))
-                active_set[gz_min_ind] = 0
-                dropped = gz_min_ind
-                dropped_sign = np.sign(W[dropped])
-                W[gz_min_ind] = 0
-                avec = avec[gamma_zero != gz_min]
-                g_min = gz_min
-                new = -1
-
-            elif g_min < lambda_:
-                if which == 0:
-                    new = gp_min_ind
-                    if verbose:
-                        print(('new positive component:' + str(new)))
-
-                else:
-                    new = gm_min_ind
-                    print(('new negative component:' + str(new)))
-
-            W[active_set == 1] = W[active_set == 1] + \
-                np.dot(g_min, np.squeeze(avec))
-            if positive:
-                if any(W < 0):
-                    flag = 1
-
-            lambda_ = lambda_ - g_min
-
-        # %  Update weights and lambdas
-        lambdas.append(lambda_)
-        Ws.append(W.copy())
-        # 5 : Take residuals r=y-y_  along the way. Stop when some other predictor x_{k}
-        # has as much correlation with  r as x_{j} has.
-        if len((Yp - np.dot(X, W)).shape) > 2:
-            res = scipy.linalg.norm(np.squeeze(Yp - np.dot(X, W)), 'fro') ** 2
-        else:
-            res = scipy.linalg.norm(Yp - np.dot(X, W), 'fro') ** 2
-
-            # % Check finishing conditions
-        if lambda_ == 0 or (new >= 0 and np.sum(active_set) == maxcomps) or (res < noise):
-            if verbose:
-                print('end. \n')
-            break
-        # 6: Continue until: all predictors are in the model
-        if new >= 0:
-            active_set[new] = 1
-
-        i = i + 1
-
-    Ws_old = Ws
-    # end main loop
-
-    #%% final calculation of mus
-    Ws = np.asarray(np.swapaxes(np.swapaxes(Ws_old, 0, 1), 1, 2))
-    if flag == 0:
-        if i > 0:
-            Ws = np.squeeze(Ws[:, :, :len(lambdas)])
-            w_dir = old_div(-(Ws[:, i] - Ws[:, i - 1]),
-                            (lambdas[i] - lambdas[i - 1]))
-            Aw = np.dot(X, w_dir)
-            y_res = np.squeeze(
-                Yp) - np.dot(X, Ws[:, i - 1] + w_dir * lambdas[i - 1])
-            ld = scipy.roots([scipy.linalg.norm(Aw) ** 2, -2 * np.dot(Aw.T, y_res),
-                              np.dot(y_res.T, y_res) - noise])
-            lam = ld[np.intersect1d(
-                np.where(ld > lambdas[i]), np.where(ld < lambdas[i - 1]))]
-            if len(lam) == 0 or np.any(lam) < 0 or np.any(~np.isreal(lam)):
-                lam = np.array([lambdas[i]])
-
-            W_lam = Ws[:, i - 1] + np.dot(w_dir, lambdas[i - 1] - lam[0])
-        else:
-            warn('LARS REGRESSION NOT SOLVABLE, USING NN LEAST SQUARE')
-            W_lam = scipy.optimize.nnls(X, np.ravel(Yp))[0]
-            lam = 10
-
-    else:
-        W_lam = 0
-        Ws = 0
-        lambdas = 0
-        lam = 0
-
-    return Ws, lambdas, W_lam, lam, flag
-
 
 # %% auxiliary functions
 def calcAvec(new, dQ, W, lambda_, active_set, M, positive):
@@ -1355,7 +1148,7 @@ def circular_constraint(img_original):
     cmin = np.min(csub)
     cmax = np.max(csub) + 1
 
-    if (rmax - rmin < 1) or (cmax - cmin < 1):
+    if (rmax - rmin) * (cmax - cmin) <= 1:
         return img
 
     if rmin == 0 and rmax == nr and cmin == 0 and cmax == nc:
@@ -1363,7 +1156,11 @@ def circular_constraint(img_original):
         y0, x0 = np.unravel_index(ind_max, [nr, nc])
         vmax = img[y0, x0]
         x, y = np.meshgrid(np.arange(nc), np.arange(nr))
-        fy, fx = np.gradient(img)
+        try:
+            fy, fx = np.gradient(img)
+        except ValueError:
+            f = np.gradient(img.ravel()).reshape(nr, nc)
+            (fy, fx) = (f, 0) if nc == 1 else (0, f)
         ind = ((fx * (x0 - x) + fy * (y0 - y) < 0) & (img < vmax / 3))
         img[ind] = 0
 
