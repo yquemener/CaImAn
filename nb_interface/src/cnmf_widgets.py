@@ -328,14 +328,14 @@ cnmf_basic_settings.children = [basic_row0,basic_row1,basic_row2, basic_row3, ba
 
 cnmf_advanced_settings = widgets.VBox()
 cnmf_advanced_settings.children = [ \
+	init_method_widget, \
 	p_widget, \
 	gnb_box, \
 	merge_thresh_box, \
 	is_dendrites_box, \
 	min_snr_widget, \
 	rval_thr_box, \
-	cnn_thr_box, \
-	init_method_widget,
+	cnn_thr_box,
 ]
 cnmf_settings = widgets.Accordion(children=[cnmf_basic_settings, cnmf_advanced_settings])
 cnmf_settings.set_title(0, 'Basic CNMF Settings') #MC = Motion Correction

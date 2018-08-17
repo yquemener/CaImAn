@@ -124,11 +124,17 @@ def context_browser_click(change):
 def wkdir_browser_click(change):
 	workingdir_selector.value = change['new'][0]
 
+def change_microscopy_type(change):
+	if change['new'] == 1:
+		init_method_widget.value = 'corr_pnr'
+	elif change['new'] == 2:
+		init_method_widget.value = 'greedy_roi'
+
 context_load_btn.on_click(load_context_event)
 context_save_btn.on_click(save_context_event)
 context_browser_btn.observe(context_browser_click)
 wkdir_browser_btn.observe(wkdir_browser_click)
-
+microscopy_type_widget.observe(change_microscopy_type, names='value')
 
 def rigid_btn_click(change):
 	disabled = False
@@ -140,13 +146,6 @@ def rigid_btn_click(change):
 	max_deviation_rigid_widget.disabled = disabled
 
 is_rigid_widget.observe(rigid_btn_click, names='value')
-
-'''wkdir_box = widgets.HBox()
-wkdir_box.children = [widgets.Label("Set Working Directory:"), workingdir_selector, workingdir_btn]
-context_box = widgets.HBox()
-context_box.children = [widgets.Label("Load context from:"),context_path_txt, context_load_btn, context_save_btn]
-wkdir_context_box = widgets.VBox()
-wkdir_context_box.children = [wkdir_box,context_box]'''
 
 
 #Get file paths for *.tif and *.avi files, load into the context object
@@ -189,15 +188,6 @@ def plot_shifts(mc_results, is_rigid=True):
 			ax_x.label = 'Time / Frames'
 			ax_y.label = 'Shift'
 		else: #non-rigid
-			#'x_shifts_els',
-			#'y_shifts_els'
-			#shifts = np.array(mc_results[0].shifts_nonrig)
-			#x_shifts_x = np.arange(shifts.shape[0])
-			#x_shifts_mean = np.array([np.mean(x) for x in context.mc_nonrig[0].x_shifts_els])
-			#x_shifts_var = np.array([np.var(x) for x in context.mc_nonrig[0].x_shifts_els])
-			#y_shifts_mean = np.array([np.mean(y) for y in context.mc_nonrig[0].y_shifts_els])
-			#y_shifts_var = np.array([np.var(y) for y in context.mc_nonrig[0].y_shifts_els])
-			#TODO fix this
 			shifts_plot_y.layout.display = ''
 			tb_shifts_y.layout.display = ''
 			shifts_plot_x.title = 'MC Extracted X Shifts'
@@ -761,7 +751,10 @@ def update_btn_click(_):
 	contours_ = [contours[i] for i in idx_components_keep]
 	#sometimes plot width gets messed up, so set width
 	#fig.layout.width = '67%'
-	update_plots(A_, C_, context.YrDT[1], conv, contours_)
+	try:
+		update_plots(A_, C_, context.YrDT[1], conv, contours_)
+	except Exception:
+		pass
 
 def roi_change(change):
 	if change is not None:
@@ -1012,33 +1005,9 @@ def view_results_(_):
 		return None
 	else:
 		update_status("Idle.")
-	#produce interface...
-	#display(interface_edit)
-	#view_results_col.children = [view_cnmf_results_widget,interface_edit]
-
 
 view_results_col.children = [view_cnmf_results_widget,interface_edit]
 view_cnmf_results_widget.on_click(view_results_)
-
-
-
-'''    mc_params = { #for processing individual movie at a time using MotionCorrect class object
-	'dview': dview, #refers to ipyparallel object for parallelism
-	'max_shifts':(2, 2),  # maximum allow rigid shift; default (2,2)
-	'niter_rig':1,
-	'splits_rig':20,
-	'num_splits_to_process_rig':None,
-	'strides':(24,24), #default 48,48
-	'overlaps':(12,12), #default 12,12
-	'splits_els':28,
-	'num_splits_to_process_els':[14, None],
-	'upsample_factor_grid':4,
-	'max_deviation_rigid':2,
-	'shifts_opencv':True,
-	'nonneg_movie':True,
-	'gSig_filt' : [int(x) for x in gSigFilter.value.split(',')] #default 9,9  best 6,6,
-	'dsfactors': None #or (1,1,1)   (ds x, ds y, ds t)
-}'''
 #import event_logic_v2 as event_ui
 #event_ui.setup_context(context)
 
@@ -1051,4 +1020,4 @@ tab_titles = ['Main','Motion Correction','MC Results','CNMF', 'CNMF Results','CN
 ui_tab.children = children
 for i in range(len(children)):
 	ui_tab.set_title(i, str(tab_titles[i]))
-app_ui.children = [status_bar_widget, ui_tab, out]
+app_ui.children = [status_bar_widget, ui_tab, out_accordion]

@@ -11,7 +11,7 @@ min_snr_edit_widget = widgets.FloatRangeSlider(
 	value=[0.5,2.5],
 	min=0.0,
 	max=10.0,
-	step=0.5,
+	step=0.05,
 	description='SNR Range:',
 	#tooltip='Number of global background components',
 	disabled=False,
@@ -22,7 +22,7 @@ rvalmin_edit_widget_ = widgets.FloatRangeSlider(
 	value=[-1, 0.9],
 	min=0.0,
 	max=5.0,
-	step=0.1,
+	step=0.05,
 	#description='R Values Min:',
 	disabled=False,
 	#layout=widgets.Layout(width="35%")
@@ -44,7 +44,7 @@ cnnmin_edit_widget_ = widgets.FloatRangeSlider(
 	value=[0.1, 0.95],
 	min=0.0,
 	max=1.0,
-	step=0.1,
+	step=0.05,
 	#description='Thresh CNN Min:',
 	disabled=False,
 	#layout=widgets.Layout(width="35%")
