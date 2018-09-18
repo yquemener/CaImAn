@@ -17,6 +17,7 @@ from caiman.source_extraction import cnmf
 from caiman.motion_correction import MotionCorrect
 from caiman.motion_correction import tile_and_correct, motion_correction_piecewise
 from caiman import save_memmap_join
+from caiman.source_extraction.cnmf import params as params
 from caiman.mmapping import load_memmap, save_tif_to_mmap_online, save_memmap
 
 from caiman.utils.visualization import inspect_correlation_pnr
@@ -110,7 +111,7 @@ def normalize_signal(signal):
 	return signal_copy
 
 #run motion correction
-def run_mc(fnames, mc_params, dsfactors, rigid=True, batch=True, scope_type=2):
+def run_mc(fnames, mc_params, dsfactors, rigid=True, batch=True, scope_type=2, dview=None):
 	min_mov = 0
 	mc_list = []
 	new_templ = None
@@ -141,7 +142,7 @@ def run_mc(fnames, mc_params, dsfactors, rigid=True, batch=True, scope_type=2):
 			tmp_files.append(tiff_file)
 		#get min_mov
 		if counter == 0:
-			#min_mov = np.array([cm.motion_correction.low_pass_filter_space(m_,mc_params['gSig_filt']) for m_ in cm.load(tiff_file, subindices=range(999))]).min()
+			#min_mov = np.array([cm.motion_correction.low_pass_filter_space(m_,mc_params.motion['gSig_filt']) for m_ in cm.load(tiff_file, subindices=range(999))]).min()
 			min_mov = cm.load(tiff_file, subindices=range(200)).min()
 			print("Min Mov: ", min_mov)
 			print("Motion correcting: " + tiff_file)
@@ -152,13 +153,15 @@ def run_mc(fnames, mc_params, dsfactors, rigid=True, batch=True, scope_type=2):
 		bord_px_rig = None
 		bord_px_els = None
 		#setup new class object
-		mc = MotionCorrect(tiff_file, min_mov, **mc_params)
-
+		#**opts.get_group('motion')
+		#mc = MotionCorrect(tiff_file, min_mov, **mc_params)
+		mc_params.motion['min_mov'] = min_mov
+		mc = MotionCorrect(tiff_file, **mc_params.get_group('motion'))
 		if rigid:
 			print("Starting RIGID motion correction...")
 			if scope_type == 1:
-				mc = motion_correct_oneP_rigid([tiff_file], gSig_filt = mc_params['gSig_filt'], \
-					splits_rig = mc_params['splits_rig'], dview = mc_params['dview'], max_shifts = mc_params['max_shifts'])
+				mc = motion_correct_oneP_rigid([tiff_file], gSig_filt = mc_params.motion['gSig_filt'], \
+					splits_rig = mc_params.motion['splits_rig'], dview = dview, max_shifts = mc_params.motion['max_shifts'])
 			else:
 				mc.motion_correct_rigid(save_movie=True, template = new_templ)
 			new_templ = mc.total_template_rig
@@ -189,7 +192,7 @@ def run_mc(fnames, mc_params, dsfactors, rigid=True, batch=True, scope_type=2):
 	mode = 'rig' if rigid else 'nonrig'
 	if batch:
 		print("Batch mode, combining files")
-		combined_file = combine_mc_mmaps(mc_list,mc_params['dview'],mode=mode)
+		combined_file = combine_mc_mmaps(mc_list,dview,mode=mode)
 		#delete individual files
 		for old_f in mc_list:
 			if rigid:
@@ -206,7 +209,7 @@ def run_mc(fnames, mc_params, dsfactors, rigid=True, batch=True, scope_type=2):
 					print("PermissionError: Cannot delete temporary file. (Non-Fatal)")
 		return mc_list, [combined_file]
 	else:
-		mmaps_final = mmap_f_to_c(mc_list, mc_params['dview'], mode=mode)
+		mmaps_final = mmap_f_to_c(mc_list, dview, mode=mode)
 		return mc_list, mmaps_final
 
 '''def flatten(l):
@@ -259,7 +262,7 @@ def resize_mov(Yr, fx=0.521, fy=0.3325):
 def clean_up_files():
 	pass
 
-def cnmf_run(fname, cnmf_params): #fname is a full path, mmap file
+def cnmf_run(fname, cnmf_params, n_processes=4, dview=None): #fname is a full path, mmap file
 	#SETTINGS
 	#gSig = 4   # gaussian width of a 2D gaussian kernel, which approximates a neuron
 	#gSiz = 12  # average diameter of a neuron
@@ -271,7 +274,8 @@ def cnmf_run(fname, cnmf_params): #fname is a full path, mmap file
 	print(dims, " ; ", T)
 	Yr = Yr.T.reshape((T,) + dims, order='F')
 	#configs
-	cnm = cnmf.CNMF(**cnmf_params)
+	#opts.set('temporal', {'p': 0})
+	cnm = cnmf.CNMF(n_processes, params=cnmf_params, dview=dview)
 	cnm.fit(Yr)
 	#get results
 	#A, C, b, f, YrA, sn, conv = cnm.A, cnm.C, cnm.b, cnm.f, cnm.YrA, cnm.sn, cnm.S
@@ -366,7 +370,7 @@ def corr_img(Yr, gSig, center_psf, plot=True):
 	return cn_raw, cn_filter, pnr, plot_
 
 def save_denoised_avi(data, dims, idx_components_keep, working_dir=""):
-	A, C, b, f, YrA, sn, idx_components, conv = data
+	A, C, b, f, YrA, sn, idx_components, conv = data.estimates
 	#idx_components = idx_components_keep
 	x = None
 	if type(A) != np.ndarray:

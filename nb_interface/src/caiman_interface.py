@@ -252,11 +252,34 @@ def run_mc_ui(_):
 		'gSig_filt' : [int(gSigFilter_widget.value)] * 2, #default 9,9  best 6,6,
 		'border_nan':'copy'
 	}
+	opts = params.CNMFParams(params_dict=mc_params)
+
+	'''opts_dictopts_di  = {'fnames': fnames,
+            'fr': fr,
+            'decay_time': decay_time,
+            'splits_rig': splits_rig,
+            'strides': strides,
+            'overlaps': overlaps,
+            'max_shifts': max_shifts,
+            'max_deviation_rigid': max_deviation_rigid,
+            'pw_rigid': pw_rigid,
+            'p': 1,
+            'nb': gnb,
+            'rf': rf,
+            'K': K,
+            'stride': stride_cnmf,
+            'method_init': method_init,
+            'rolling_sum': True,
+            'is_dendrites': is_dendrites,
+            'min_SNR': min_SNR,
+            'rval_thr': rval_thr,
+            'use_cnn': False,
+            'min_cnn_thr': cnn_thr}'''
 	#call run_mc
 	#< run_mc(fnames, mc_params, rigid=True, batch=True) > returns list of mmap file names
 	dsfactors = (float(dsx_widget.value),float(dsy_widget.value),float(dst_widget.value)) #or (1,1,1)   (ds x, ds y, ds t)
 	context.mc_dsfactors = dsfactors
-	mc_results, mmap_files = run_mc(context.working_mc_files, mc_params, dsfactors, rigid=is_rigid, batch=is_batch)
+	mc_results, mmap_files = run_mc(context.working_mc_files, opts, dsfactors, rigid=is_rigid, batch=is_batch, dview=context.dview)
 	#combined_file is None if not batch mode
 	if is_rigid:
 		context.mc_rig = mc_results
@@ -375,15 +398,17 @@ def filter_components():
 		  'use_cnn':None, 'min_cnn_thr':cnn[1], \
 		  'cnn_lowest':cnn[0], 'gSig_range':gSig}
 
-	cnm = context.cnm.filter_components(Yr_reshaped, **params)
+	#cnm = context.cnm.filter_components(Yr_reshaped, **params)
+	#cmn = context.cnm.estimates.evaluate_components(Yr_reshaped, **params)
+	context.cnm.estimates.evaluate_components(Yr_reshaped, context.cnm.params, dview=context.cnm.dview)
 	'''fr=fr_, decay_time=decay_time_, min_SNR=min_snr_, \
 				SNR_lowest=None, rval_thr=rval_thr_, rval_lowest=None, \
 				use_cnn=None, min_cnn_thr=cnn_thr_, \
 				cnn_lowest=None, gSig_range=None'''
-	cnm.dview = None #need to set to none to be pickle-able
-	context.cnm = cnm
-	context.idx_components_keep, context.idx_components_toss = cnm.idx_components, cnm.idx_components_bad
-	return context.idx_components_keep, context.idx_components_toss
+	context.cnm.dview = None #need to set to none to be pickle-able
+	#context.cnm = cnm
+	context.cnm.estimates.idx_components, context.idx_components_toss = context.cnm.estimates.idx_components, context.cnm.estimates.idx_components_bad
+	return context.cnm.estimates.idx_components, context.idx_components_toss
 
 @out.capture()
 def run_cnmf_ui(_):
@@ -453,6 +478,7 @@ def run_cnmf_ui(_):
 		'del_duplicates':True,
 		'border_pix':context.border_pix,
 	}
+	opts = params.CNMFParams(params_dict=cnmf_params)
 	#save params to context
 	context.cnmf_params = cnmf_params
 	#RUN CNMF-E
@@ -479,10 +505,12 @@ def run_cnmf_ui(_):
 	print("Starting CNMF-E...")
 	print("Using patches") if is_patches else print("Single FOV")
 	print("Deconvolution: ON") if bool(deconv_flag_widget.value) else print("Deconvolution: OFF")
-	cnm = cnmf_run(context.working_cnmf_file, cnmf_params)
+	cnm = cnmf_run(context.working_cnmf_file, opts, n_processes=context.n_processes, dview=context.dview)
 	cnm.dview = None #need to set to none to be pickle-able
 	context.cnm = cnm
-	A, C, b, f, YrA, sn, conv = cnm.A, cnm.C, cnm.b, cnm.f, cnm.YrA, cnm.sn, cnm.S
+	estimates = cnm.estimates
+	A, C, b, f, YrA, sn, conv = estimates.A, estimates.C, estimates.b, \
+								estimates.f, estimates.YrA, estimates.sn, estimates.S
 	for i in range(C.shape[0]): #for each trace
 		C[i] = normalize_signal(C[i])
 	idx_components = np.arange(A.shape[-1])
@@ -492,7 +520,7 @@ def run_cnmf_ui(_):
 	A = np.asarray(A) #make sure A is ndarray not matrix
 	C = np.asarray(C) #make sure C is ndarray not matrix'''
 	print("{}".format(type(A)))
-	context.cnmf_results = A, C, b, f, YrA, sn, idx_components, conv
+	#context.cnmf_results = A, C, b, f, YrA, sn, idx_components, conv
 	#print("CNMF-E FINISHED!")
 	#update_status("CNMF Finished")
 	#results: A, C, b, f, YrA, sn, idx_components, S
@@ -500,18 +528,20 @@ def run_cnmf_ui(_):
 	save_movie_bool = bool(save_movie_widget.value)
 	if refine_results:
 		update_status("Automatically refining results...")
-		#Yr_reshaped = reshape_Yr(*context.YrDT)
-		context.idx_components_keep, context.idx_components_toss = filter_components()
+		Yr_reshaped = reshape_Yr(*context.YrDT)
+		#Y = np.reshape(Yr, dims + (T,), order='F')
+		#context.cnm.estimates.idx_components, context.idx_components_toss = filter_components()
+		context.cnm.estimates.filter_components(Yr_reshaped)
 
 	else:
 		update_status("Skipping automatic results refinement...")
-		context.idx_components_keep = context.cnmf_results[6]
+		#context.cnm.estimates.idx_components = context.cnmf_results[6]
 	#def corr_img(Yr, gSig, center_psr :bool):
 	#save denoised movie:
 	fn = ''
 	if save_movie_bool:
 		update_status("Saving denoised movie as .avi")
-		fn = save_denoised_avi(context.cnmf_results, dims, context.idx_components_keep, context.working_dir)
+		fn = save_denoised_avi(context.cnm, dims, context.cnm.estimates.idx_components, context.working_dir)
 		update_status("CNMF Finished", fn)
 	else:
 		update_status("CNMF Finished")
@@ -537,7 +567,7 @@ def is_edit_changed(changed):
 		edit_panel_widget.layout.display = 'None'
 		fig.layout.width = '67%'
 		#Need to update selected ROIs
-		context.idx_components_keep = rois_edit.selected
+		context.cnm.estimates.idx_components = rois_edit.selected
 		update_idx_components_plots()
 	else: #Edit mode
 		rois.visible = False
@@ -564,7 +594,7 @@ def download_data_func(_):
 	except Exception as e:
 		update_status("Error: Unable to load data.")
 		return None
-	adj_c = C[context.idx_components_keep,:]
+	adj_c = C[context.cnm.estimates.idx_components,:]
 	adj_s = conv
 	currentDT2 = datetime.datetime.now()
 	ts2_ = currentDT2.strftime("%Y%m%d_%H_%M_%S")
@@ -647,7 +677,7 @@ def slider_change(change):
 	if type(A) != np.ndarray: #probably sparse array, need to convert to dense array in order to reshape
 		A = A.toarray()
 	dims = context.YrDT[1]
-	idx_components_keep = context.idx_components_keep
+	idx_components_keep = context.cnm.estimates.idx_components
 	A_ = A[:, idx_components_keep]
 	C_ = C[idx_components_keep, :]
 	contours_ = [contours[i] for i in idx_components_keep]
@@ -724,9 +754,9 @@ def update_plots(A, C, dims, conv, contours):
 	l1 = traitlets.directional_link((roi_slider, 'value'), (rois, 'selected'), slider_change)'''
 
 def update_idx_components_plots():
-	idx_components_keep = list(context.idx_components_keep)
+	idx_components_keep = list(context.cnm.estimates.idx_components)
 	A, C, b, f, YrA, sn, idx_components, conv = load_context_data(context)
-	idx_components_keep = context.idx_components_keep
+	idx_components_keep = context.cnm.estimates.idx_components
 	A_ = A[:, idx_components_keep]
 	C_ = C[idx_components_keep, :]
 	contours_ = [contours[i] for i in idx_components_keep]
@@ -735,7 +765,7 @@ def update_idx_components_plots():
 @out.capture()
 def update_btn_click(_):
 	global contours
-	if context.cnmf_results in [None, [], ''] or len(context.YrDT) == 0:
+	if context.cnm in [None, [], ''] or len(context.YrDT) == 0:
 		update_status("Error: No data loaded.")
 		return None
 
@@ -745,7 +775,7 @@ def update_btn_click(_):
 	idx_components_keep, idx_components_toss = filter_components()
 
 	A, C, b, f, YrA, sn, idx_components, conv = load_context_data(context)
-	idx_components_keep = context.idx_components_keep
+	idx_components_keep = context.cnm.estimates.idx_components
 	A_ = A[:, idx_components_keep]
 	C_ = C[idx_components_keep, :]
 	contours_ = [contours[i] for i in idx_components_keep]
@@ -785,7 +815,7 @@ def show_cnmf_results_interface(context):
 	except:
 		update_status("Error: Unable to load data.")
 		return None
-	idx_components_keep = context.idx_components_keep
+	idx_components_keep = context.cnm.estimates.idx_components
 	A_ = A[:, idx_components_keep]
 	C_ = C[idx_components_keep, :]
 	#A spatial matrix, C temporal matrix, S deconvolution results (if applicable)
@@ -961,18 +991,20 @@ def getYrDT():
 #@out.capture()
 def view_cnmf_mov_click(_):
 	update_status("Launching movie")
-	A, C, b, f, YrA, sn, idx_components, conv = context.cnmf_results
+	A, C, b, f, YrA, sn, conv = estimates.A, estimates.C, estimates.b, \
+								estimates.f, estimates.YrA, estimates.sn, estimates.S#context.cnm.estimates
 	Yr, dims, T = getYrDT()
 	mag_val = validate_col_mag_slider.value
-	cm.movie(np.reshape(A.tocsc()[:, context.idx_components_keep].dot(
-	C[context.idx_components_keep]), dims + (-1,), order='F').transpose(2, 0, 1)).play(magnification=mag_val, gain=10.)
+	cm.movie(np.reshape(A.tocsc()[:, context.cnm.estimates.idx_components].dot(
+	C[context.cnm.estimates.idx_components]), dims + (-1,), order='F').transpose(2, 0, 1)).play(magnification=mag_val, gain=10.)
 	update_status("Idle")
 
 def view_bgmov_click(_):
 	update_status("Launching movie")
 	Yr, dims, T = getYrDT()
 	Y = Yr.T.reshape((T,) + dims, order='F')
-	A, C, b, f, YrA, sn, idx_components, conv = context.cnmf_results
+	A, C, b, f, YrA, sn, conv = estimates.A, estimates.C, estimates.b, \
+								estimates.f, estimates.YrA, estimates.sn, estimates.S
 	mag_val = validate_col_mag_slider.value
 	cm.movie(np.reshape(b.dot(f), dims + (-1,),
 					order='F').transpose(2, 0, 1)).play(magnification=mag_val, gain=1.)#magnification=3, gain=1.
@@ -980,7 +1012,8 @@ def view_bgmov_click(_):
 
 def view_residual_click(_):
 	update_status("Launching movie")
-	A, C, b, f, YrA, sn, idx_components, conv = context.cnmf_results
+	A, C, b, f, YrA, sn, conv = estimates.A, estimates.C, estimates.b, \
+								estimates.f, estimates.YrA, estimates.sn, estimates.S
 	Yr, dims, T = getYrDT()
 	Y = Yr.T.reshape((T,) + dims, order='F')
 	mag_val = validate_col_mag_slider.value
@@ -996,7 +1029,7 @@ validate_col_bgmov_btn, validate_col_residual_btn]
 
 def view_results_(_):
 	#Yr_reshaped.reshape(np.prod(dims), T)
-	if context.cnmf_results in [None, []]:
+	if context.cnm in [None, []]:
 		update_status("Error: No data loaded.")
 		return None
 	update_status("Launching interactive results viewer...this may take a few moments.")

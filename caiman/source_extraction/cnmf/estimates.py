@@ -280,8 +280,8 @@ class Estimates(object):
             caiman.utils.visualization.view_patches_bar(Yr, self.A, self.C,
                     self.b, self.f, self.dims[0], self.dims[1], YrA=self.R, img=img)
         else:
-            caiman.utils.visualization.view_patches_bar(Yr, self.A.tocsc()[:,idx], 
-                                                        self.C[idx], self.b, self.f, 
+            caiman.utils.visualization.view_patches_bar(Yr, self.A.tocsc()[:,idx],
+                                                        self.C[idx], self.b, self.f,
                                                         self.dims[0], self.dims[1], YrA=self.R[idx], img=img)
         return self
 
@@ -332,8 +332,8 @@ class Estimates(object):
                     self.b, self.f, self.dims[0], self.dims[1], YrA=self.R, image_neurons=img,
                     thr=thr, denoised_color=denoised_color, cmap=cmap)
         else:
-            caiman.utils.visualization.nb_view_patches(Yr, self.A.tocsc()[:,idx], 
-                                                        self.C[idx], self.b, self.f, 
+            caiman.utils.visualization.nb_view_patches(Yr, self.A.tocsc()[:,idx],
+                                                        self.C[idx], self.b, self.f,
                                                         self.dims[0], self.dims[1], YrA=self.R[idx], image_neurons=img,
                                                         thr=thr, denoised_color=denoised_color, cmap=cmap)
         return self
@@ -679,7 +679,7 @@ class Estimates(object):
         self.cnn_preds = predictions[:, neuron_class]
         self.idx_components = np.where(self.cnn_preds >= min_cnn_thr)[0]
         return self
-    
+
     def evaluate_components(self, imgs, params, dview=None):
         """Computes the quality metrics for each component and stores the
         indeces of the components that pass user specified thresholds. The
@@ -726,7 +726,7 @@ class Estimates(object):
         opts = params.get_group('quality')
         idx_components, idx_components_bad, SNR_comp, r_values, cnn_preds = \
         estimate_components_quality_auto(imgs, self.A, self.C, self.b, self.f,
-                                         self.YrA, 
+                                         self.YrA,
                                          params.get('data', 'fr'),
                                          params.get('data', 'decay_time'),
                                          params.get('init', 'gSig'),

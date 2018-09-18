@@ -9,12 +9,12 @@ import os
 
 def load_context_data(context):
 	try:
+		est = context.cnm.estimates
 		if len(context.cnmf_results) == 8: #for backward compatibility
-			A, C, b, f, YrA, sn, idx_components, conv = context.cnmf_results
+			A, C, b, f, YrA, sn, conv = est.A, est.C, est.b, est.f, est.YrA, est.sn, est.S
 		else:
-			A, C, b, f, YrA, sn, idx_components = context.cnmf_results
-			conv = None
-		return A, C, b, f, YrA, sn, idx_components, conv
+			A, C, b, f, YrA, sn, conv = est.A, est.C, est.b, est.f, est.YrA, est.sn, est.S
+		return A, C, b, f, YrA, sn, conv
 	except Exception as e:
 		print("Error loading context.")
 		return None
