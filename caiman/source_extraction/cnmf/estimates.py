@@ -16,8 +16,9 @@ from .spatial import threshold_components
 from ...components_evaluation import (
         evaluate_components_CNN, estimate_components_quality_auto,
         select_components_from_metrics)
-from ...base.rois import detect_duplicates_and_subsets, nf_match_neurons_in_binary_masks
+from ...base.rois import detect_duplicates_and_subsets, nf_match_neurons_in_binary_masks, nf_masks_to_neurof_dict
 from .initialization import downscale
+
 
 class Estimates(object):
     def __init__(self, A=None, b=None, C=None, f=None, R=None, dims=None):
@@ -25,73 +26,72 @@ class Estimates(object):
         deconvolved neural activity, and background. Quality metrics are also stored. The class has methods
         for evaluating the quality of each component, DF/F normalization and some basic plotting.
 
-        Parameters/Attributes
-        ---------------------
-        A:  scipy.sparse.csc_matrix (dimensions: # of pixels x # components)
-            set of spatial footprints. Each footprint is represented in a column of A, flattened with order = 'F'
+        Args:
+            A:  scipy.sparse.csc_matrix (dimensions: # of pixels x # components)
+                set of spatial footprints. Each footprint is represented in a column of A, flattened with order = 'F'
 
-        C:  np.ndarray (dimensions: # of components x # of timesteps)
-            set of temporal traces (each row of C corresponds to a trace)
+            C:  np.ndarray (dimensions: # of components x # of timesteps)
+                set of temporal traces (each row of C corresponds to a trace)
 
-        f:  np.ndarray (dimensions: # of background components x # of timesteps)
-            set of temporal background components
+            f:  np.ndarray (dimensions: # of background components x # of timesteps)
+                set of temporal background components
 
-        b:  np.ndarray or scipy.sparse.csc_matrix (dimensions: # of pixels x # of background components)
-            set of spatial background components, flattened with order = 'F'
+            b:  np.ndarray or scipy.sparse.csc_matrix (dimensions: # of pixels x # of background components)
+                set of spatial background components, flattened with order = 'F'
 
-        R:  np.ndarray (dimensions: # of components x # of timesteps)
-            set of trace residuals
+            R:  np.ndarray (dimensions: # of components x # of timesteps)
+                set of trace residuals
 
-        YrA:    np.ndarray (dimensions: # of components x # of timesteps)
-            set of trace residuals
+            YrA:    np.ndarray (dimensions: # of components x # of timesteps)
+                set of trace residuals
 
-        S:  np.ndarray (dimensions: # of components x # of timesteps)
-            set of deconvolved neural activity traces
+            S:  np.ndarray (dimensions: # of components x # of timesteps)
+                set of deconvolved neural activity traces
 
-        F_dff:  np.ndarray (dimensions: # of components x # of timesteps)
-            set of DF/F normalized activity traces (only for 2p)
+            F_dff:  np.ndarray (dimensions: # of components x # of timesteps)
+                set of DF/F normalized activity traces (only for 2p)
 
-        W:  scipy.sparse.coo_matrix (dimensions: # of pixels x # of pixels)
-            Ring model matrix (used in 1p processing with greedy_pnr for background computation)
+            W:  scipy.sparse.coo_matrix (dimensions: # of pixels x # of pixels)
+                Ring model matrix (used in 1p processing with greedy_pnr for background computation)
 
-        b0: np.ndarray (dimensions: # of pixels)
-            constant baseline for each pixel
+            b0: np.ndarray (dimensions: # of pixels)
+                constant baseline for each pixel
 
-        sn: np.ndarray (dimensions: # of pixels)
-            noise std for each pixel
+            sn: np.ndarray (dimensions: # of pixels)
+                noise std for each pixel
 
-        g:  list (length: # of components)
-            time constants for each trace
+            g:  list (length: # of components)
+                time constants for each trace
 
-        bl: list (length: # of components)
-            constant baseline for each trace
+            bl: list (length: # of components)
+                constant baseline for each trace
 
-        c1: list (length: # of components)
-            initial value for each trace
+            c1: list (length: # of components)
+                initial value for each trace
 
-        neurons_sn: list (length: # of components)
-            noise std for each trace
+            neurons_sn: list (length: # of components)
+                noise std for each trace
 
-        center: list (length: # of components)
-            centroid coordinate for each spatial footprint
+            center: list (length: # of components)
+                centroid coordinate for each spatial footprint
 
-        coordinates: list (length: # of components)
-            contour plot for each spatial footprint
+            coordinates: list (length: # of components)
+                contour plot for each spatial footprint
 
-        idx_components: list
-            indeces of accepted components
+            idx_components: list
+                indeces of accepted components
 
-        idx_components_bad: list
-            indeces of rejected components
+            idx_components_bad: list
+                indeces of rejected components
 
-        SNR_comp: np.ndarray
-            trace SNR for each component
+            SNR_comp: np.ndarray
+                trace SNR for each component
 
-        r_values: np.ndarray
-            space correlation for each component
+            r_values: np.ndarray
+                space correlation for each component
 
-        cnn_preds: np.ndarray
-            CNN predictions for each component
+            cnn_preds: np.ndarray
+                CNN predictions for each component
         """
         # variables related to the estimates of traces, footprints, deconvolution and background
         self.A = A
@@ -153,21 +153,18 @@ class Estimates(object):
     def plot_contours(self, img=None, idx=None, crd=None, thr_method='max',
                       thr='0.2'):
         """view contours of all spatial footprints.
-        Parameters:
-        -----------
-        img :   np.ndarray
+
+        Args:
+            img :   np.ndarray
                 background image for contour plotting. Default is the mean
                 image of all spatial components (d1 x d2)
-        idx :   list
+            idx :   list
                 list of accepted components
-
-        crd :   list
+            crd :   list
                 list of coordinates (if empty they are computed)
-
-        thr_method : str
-                     thresholding method for computing contours ('max', 'nrg')
-
-        thr : float
+            thr_method : str
+                thresholding method for computing contours ('max', 'nrg')
+            thr : float
                 threshold value
         """
         if 'csc_matrix' not in str(type(self.A)):
@@ -198,22 +195,19 @@ class Estimates(object):
 
     def plot_contours_nb(self, img=None, idx=None, crd=None, thr_method='max',
                          thr='0.2'):
-        """view contours od all spatial footprints (notebook environment).
-        Parameters:
-        -----------
-        img :   np.ndarray
+        """view contours of all spatial footprints (notebook environment).
+
+        Args:
+            img :   np.ndarray
                 background image for contour plotting. Default is the mean
                 image of all spatial components (d1 x d2)
-        idx :   list
+            idx :   list
                 list of accepted components
-
-        crd :   list
+            crd :   list
                 list of coordinates (if empty they are computed)
-
-        thr_method : str
-                     thresholding method for computing contours ('max', 'nrg')
-
-        thr : float
+            thr_method : str
+                thresholding method for computing contours ('max', 'nrg')
+            thr : float
                 threshold value
         """
         if 'csc_matrix' not in str(type(self.A)):
@@ -246,19 +240,16 @@ class Estimates(object):
     def view_components(self, Yr=None, img=None, idx=None):
         """view spatial and temporal components interactively
 
-        Parameters:
-        -----------
-        Yr :    np.ndarray
+        Args:
+            Yr :    np.ndarray
                 movie in format pixels (d) x frames (T)
 
-        img :   np.ndarray
+            img :   np.ndarray
                 background image for contour plotting. Default is the mean
                 image of all spatial components (d1 x d2)
 
-        idx :   list
+            idx :   list
                 list of components to be plotted
-
-
         """
         if 'csc_matrix' not in str(type(self.A)):
             self.A = scipy.sparse.csc_matrix(self.A)
@@ -289,27 +280,25 @@ class Estimates(object):
                            denoised_color=None, cmap='jet', thr=0.99):
         """view spatial and temporal components interactively in a notebook
 
-        Parameters:
-        -----------
-        Yr :    np.ndarray
+        Args:
+            Yr :    np.ndarray
                 movie in format pixels (d) x frames (T)
 
-        img :   np.ndarray
+            img :   np.ndarray
                 background image for contour plotting. Default is the mean
                 image of all spatial components (d1 x d2)
 
-        idx :   list
+            idx :   list
                 list of components to be plotted
 
-        thr: double
-            threshold regulating the extent of the displayed patches
+            thr: double
+                threshold regulating the extent of the displayed patches
 
-        denoised_color: string or None
-            color name (e.g. 'red') or hex color code (e.g. '#F0027F')
+            denoised_color: string or None
+                color name (e.g. 'red') or hex color code (e.g. '#F0027F')
 
-        cmap: string
-            name of colormap (e.g. 'viridis') used to plot image_neurons
-
+            cmap: string
+                name of colormap (e.g. 'viridis') used to plot image_neurons
         """
         if 'csc_matrix' not in str(type(self.A)):
             self.A = scipy.sparse.csc_matrix(self.A)
@@ -344,40 +333,39 @@ class Estimates(object):
         """view spatial and temporal components interactively in a notebook
         (version for 3d data)
 
-        Parameters:
-        -----------
-        Yr :    np.ndarray
+        Args:
+            Yr :    np.ndarray
                 movie in format pixels (d) x frames (T) (only required to
                 compute the correlation image)
 
-        img :   np.ndarray
+            img :   np.ndarray
                 background image for contour plotting. Default is the mean
                 image of all spatial components (d1 x d2)
 
-        idx :   list
+            idx :   list
                 list of components to be plotted
 
-        dims: tuple of ints
-            dimensions of movie (x, y and z)
+            dims: tuple of ints
+                dimensions of movie (x, y and z)
 
-        image_type: 'mean'|'max'|'corr'
-            image to be overlaid to neurons (average of shapes,
-            maximum of shapes or nearest neigbor correlation of raw data)
+            image_type: 'mean'|'max'|'corr'
+                image to be overlaid to neurons (average of shapes,
+                maximum of shapes or nearest neigbor correlation of raw data)
 
-        max_projection: bool
-            plot max projection along specified axis if True, o/w plot layers
+            max_projection: bool
+                plot max projection along specified axis if True, o/w plot layers
 
-        axis: int (0, 1 or 2)
-            axis along which max projection is performed or layers are shown
+            axis: int (0, 1 or 2)
+                axis along which max projection is performed or layers are shown
 
-        thr: scalar between 0 and 1
-            Energy threshold for computing contours
+            thr: scalar between 0 and 1
+                Energy threshold for computing contours
 
-        denoised_color: string or None
-            color name (e.g. 'red') or hex color code (e.g. '#F0027F')
+            denoised_color: string or None
+                color name (e.g. 'red') or hex color code (e.g. '#F0027F')
 
-        cmap: string
-            name of colormap (e.g. 'viridis') used to plot image_neurons
+            cmap: string
+                name of colormap (e.g. 'viridis') used to plot image_neurons
 
         """
         if 'csc_matrix' not in str(type(self.A)):
@@ -408,35 +396,34 @@ class Estimates(object):
 
         """Displays a movie with three panels (original data (left panel),
         reconstructed data (middle panel), residual (right panel))
-        Parameters:
-        -----------
-        imgs: np.array (possibly memory mapped, t,x,y[,z])
-            Imaging data
 
-        q_max: float (values in [0, 100])
-            percentile for maximum plotting value
+        Args:
+            imgs: np.array (possibly memory mapped, t,x,y[,z])
+                Imaging data
 
-        q_min: float (values in [0, 100])
-            percentile for minimum plotting value
+            q_max: float (values in [0, 100])
+                percentile for maximum plotting value
 
-        gain_res: float
-            amplification factor for residual movie
+            q_min: float (values in [0, 100])
+                percentile for minimum plotting value
 
-        magnification: float
-            magnification factor for whole movie
+            gain_res: float
+                amplification factor for residual movie
 
-        include_bck: bool
-            flag for including background in original and reconstructed movie
+            magnification: float
+                magnification factor for whole movie
 
-        frame_rage: range or slice or list
-            display only a subset of frames
+            include_bck: bool
+                flag for including background in original and reconstructed movie
 
-        bpx: int
-            number of pixels to exclude on each border
+            frame_rage: range or slice or list
+                display only a subset of frames
+
+            bpx: int
+                number of pixels to exclude on each border
 
         Returns:
-        --------
-        self (to stop the movie press 'q')
+            self (to stop the movie press 'q')
         """
         dims = imgs.shape[1:]
         if 'movie' not in str(type(imgs)):
@@ -480,11 +467,9 @@ class Estimates(object):
     def compute_residuals(self, Yr):
         """compute residual for each component (variable R)
 
-         Parameters:
-         -----------
-         Yr :    np.ndarray
+         Args:
+             Yr :    np.ndarray
                  movie in format pixels (d) x frames (T)
-
         """
         if len(Yr.shape) > 2:
             Yr = np.reshape(Yr.transpose(1,2,0), (-1, Yr.shape[0]), order='F')
@@ -518,28 +503,26 @@ class Estimates(object):
         """Computes DF/F normalized fluorescence for the extracted traces. See
         caiman.source.extraction.utilities.detrend_df_f for details
 
-        Parameters:
-        -----------
-        quantile_min: float
-            quantile used to estimate the baseline (values in [0,100])
+        Args:
+            quantile_min: float
+                quantile used to estimate the baseline (values in [0,100])
 
-        frames_window: int
-            number of frames for computing running quantile
+            frames_window: int
+                number of frames for computing running quantile
 
-        flag_auto: bool
-            flag for determining quantile automatically (different for each
-            trace)
+            flag_auto: bool
+                flag for determining quantile automatically (different for each
+                trace)
 
-        use_fast: bool
-            flag for using approximate fast percentile filtering
+            use_fast: bool
+                flag for using approximate fast percentile filtering
 
-        use_residuals: bool
-            flag for using non-deconvolved traces in DF/F calculation
+            use_residuals: bool
+                flag for using non-deconvolved traces in DF/F calculation
 
         Returns:
-        --------
-        self: CNMF object
-            self.F_dff contains the DF/F normalized traces
+            self: CNMF object
+                self.F_dff contains the DF/F normalized traces
         """
 
         if self.C is None:
@@ -557,7 +540,7 @@ class Estimates(object):
         else:
             R = None
 
-        self.F_dff = detrend_df_f(self.A, self.b, self.C, self.f, R,
+        self.F_dff = detrend_df_f(self.A, self.b, self.C, self.f, self.YrA,
                                   quantileMin=quantileMin,
                                   frames_window=frames_window,
                                   flag_auto=flag_auto, use_fast=use_fast)
@@ -603,23 +586,21 @@ class Estimates(object):
         The subset can be either user defined with the variable idx_components
         or read from the estimates object. The flag use_object determines this
         choice. If no subset is present then all components are kept.
-        Parameters:
-        -----------
-        idx_components: list
-            indeces of components to be kept
 
-        use_object: bool
-            Flag to use self.idx_components for reading the indeces.
+        Args:
+            idx_components: list
+                indeces of components to be kept
+
+            use_object: bool
+                Flag to use self.idx_components for reading the indeces.
 
         Returns:
-        --------
-        self: Estimates object
+            self: Estimates object
         """
         if use_object:
             idx_components = self.idx_components
         if idx_components is None:
             idx_components = range(self.A.shape[-1])
-        import pdb
 
         for field in ['C', 'S', 'YrA', 'R', 'g', 'bl', 'c1', 'neurons_sn', 'lam', 'cnn_preds']:
             print(field)
@@ -639,20 +620,6 @@ class Estimates(object):
                 else:
                     setattr(self, field, getattr(self, field)[:, idx_components])
 
-
-        # self.A = self.A.tocsc()[:, idx_components]
-        # self.C = self.C[idx_components]
-        # self.S = self.S[idx_components]
-        # self.YrA = self.YrA[idx_components]
-        # self.R = self.YrA
-        # self.g = self.g[idx_components]
-        # self.bl = self.bl[idx_components]
-        # self.c1 = self.c1[idx_components]
-        # self.neurons_sn = self.neurons_sn[idx_components]
-        # self.lam = self.lam[idx_components]
-        #
-        # if self.A_thr is not None:
-        #     self.A_thr = self.A_thr.tocsc()[:, idx_components]
         self.idx_components = None
         self.idx_components_bad = None
         return self
@@ -660,17 +627,16 @@ class Estimates(object):
     def evaluate_components_CNN(self, params, neuron_class=1):
         """Estimates the quality of inferred spatial components using a
         pretrained CNN classifier.
-        Parameters:
-        -----------
-        params: params object
-            see .params for details
-        neuron_class: int
-            class label for neuron shapes
+
+        Args:
+            params: params object
+                see .params for details
+            neuron_class: int
+                class label for neuron shapes
         Returns:
-        ----------
-        self: Estimates object
-            self.idx_components contains the indeced of components above
-            the required treshold.
+            self: Estimates object
+                self.idx_components contains the indeced of components above
+                the required treshold.
         """
         dims = params.get('data', 'dims')
         gSig = params.get('init', 'gSig')
@@ -685,42 +651,41 @@ class Estimates(object):
         indeces of the components that pass user specified thresholds. The
         various thresholds and parameters can be passed as inputs. If left
         empty then they are read from self.params.quality']
-        Parameters:
-        -----------
-        imgs: np.array (possibly memory mapped, t,x,y[,z])
-            Imaging data
 
-        fr: float
-            Imaging rate
+        Args:
+            imgs: np.array (possibly memory mapped, t,x,y[,z])
+                Imaging data
 
-        decay_time: float
-            length of decay of typical transient (in seconds)
+            fr: float
+                Imaging rate
 
-        min_SNR: float
-            trace SNR threshold
+            decay_time: float
+                length of decay of typical transient (in seconds)
 
-        rval_thr: float
-            space correlation threshold
+            min_SNR: float
+                trace SNR threshold
 
-        use_cnn: bool
-            flag for using the CNN classifier
+            rval_thr: float
+                space correlation threshold
 
-        min_cnn_thr: float
-            CNN classifier threshold
+            use_cnn: bool
+                flag for using the CNN classifier
+
+            min_cnn_thr: float
+                CNN classifier threshold
 
         Returns:
-        --------
-        self: CNMF object
-            self.idx_components: np.array
-                indeces of accepted components
-            self.idx_components_bad: np.array
-                indeces of rejected components
-            self.SNR_comp: np.array
-                SNR values for each temporal trace
-            self.r_values: np.array
-                space correlation values for each component
-            self.cnn_preds: np.array
-                CNN classifier values for each component
+            self: CNMF object
+                self.idx_components: np.array
+                    indeces of accepted components
+                self.idx_components_bad: np.array
+                    indeces of rejected components
+                self.SNR_comp: np.array
+                    SNR values for each temporal trace
+                self.r_values: np.array
+                    space correlation values for each component
+                self.cnn_preds: np.array
+                    CNN classifier values for each component
         """
         dims = imgs.shape[1:]
         opts = params.get_group('quality')
@@ -744,65 +709,64 @@ class Estimates(object):
         return self
 
 
-    def filter_components(self, imgs, **kwargs):
+    def filter_components(self, imgs, params, new_dict={}):
         """Filters components based on given thresholds without re-computing
         the quality metrics. If the quality metrics are not present then it
         calls self.evaluate components.
-        Parameters:
-        -----------
-        imgs: np.array (possibly memory mapped, t,x,y[,z])
-            Imaging data
 
-        fr: float
-            Imaging rate
+        Args:
+            imgs: np.array (possibly memory mapped, t,x,y[,z])
+                Imaging data
 
-        decay_time: float
-            length of decay of typical transient (in seconds)
+            fr: float
+                Imaging rate
 
-        min_SNR: float
-            trace SNR threshold
+            decay_time: float
+                length of decay of typical transient (in seconds)
 
-        SNR_lowest: float
-            minimum required trace SNR
+            min_SNR: float
+                trace SNR threshold
 
-        rval_thr: float
-            space correlation threshold
+            SNR_lowest: float
+                minimum required trace SNR
 
-        rval_lowest: float
-            minimum required space correlation
+            rval_thr: float
+                space correlation threshold
 
-        use_cnn: bool
-            flag for using the CNN classifier
+            rval_lowest: float
+                minimum required space correlation
 
-        min_cnn_thr: float
-            CNN classifier threshold
+            use_cnn: bool
+                flag for using the CNN classifier
 
-        cnn_lowest: float
-            minimum required CNN threshold
+            min_cnn_thr: float
+                CNN classifier threshold
 
-        gSig_range: list
-            gSig scale values for CNN classifier
+            cnn_lowest: float
+                minimum required CNN threshold
+
+            gSig_range: list
+                gSig scale values for CNN classifier
 
         Returns:
-        --------
-        self: CNMF object
-            self.idx_components: np.array
-                indeces of accepted components
-            self.idx_components_bad: np.array
-                indeces of rejected components
-            self.SNR_comp: np.array
-                SNR values for each temporal trace
-            self.r_values: np.array
-                space correlation values for each component
-            self.cnn_preds: np.array
-                CNN classifier values for each component
+            self: CNMF object
+                self.idx_components: np.array
+                    indeces of accepted components
+                self.idx_components_bad: np.array
+                    indeces of rejected components
+                self.SNR_comp: np.array
+                    SNR values for each temporal trace
+                self.r_values: np.array
+                    space correlation values for each component
+                self.cnn_preds: np.array
+                    CNN classifier values for each component
         """
         dims = imgs.shape[1:]
-        self.params.set('quality', kwargs)
+        params.set('quality', new_dict)
 
-        opts = self.params.get_group('quality')
+        opts = params.get_group('quality')
         self.idx_components, self.idx_components_bad, self.cnn_preds = \
-        select_components_from_metrics(self.A, dims, self.params.get('init', 'gSig'), self.r_values,
+        select_components_from_metrics(self.A, dims, params.get('init', 'gSig'), self.r_values,
                                        self.SNR_comp, predictions=self.cnn_preds,
                                        r_values_min=opts['rval_thr'],
                                        r_values_lowest=opts['rval_lowest'],
@@ -829,22 +793,18 @@ class Estimates(object):
         '''
 
         if self.A_thr is None:
-
             A_thr = threshold_components(self.A, self.dims,  maxthr=maxthr, dview=dview, medw=None, thr_method='max', nrgthr=0.99,
                                          extract_cc=True, se=None, ss=None, **kwargs)
-
             self.A_thr = A_thr
         else:
             print('A_thr already computed. If you want to recompute set self.A_thr to None')
 
-
-
     def remove_small_large_neurons(self, min_size_neuro, max_size_neuro):
-        ''' remove neurons that are too large or too smal
+        ''' remove neurons that are too large or too small
 
-        @param min_size_neuro: min size in pixels
-        @param max_size_neuro: max size inpixels
-        @return:
+	Args:
+            min_size_neuro: min size in pixels
+            max_size_neuro: max size in pixels
         '''
         if self.A_thr is None:
             raise Exception('You need to compute thresolded components before calling remove_duplicates: use the threshold_components method')
@@ -854,17 +814,16 @@ class Estimates(object):
         neurons_to_keep = np.where((size_neurons_gt > min_size_neuro) & (size_neurons_gt < max_size_neuro))[0]
         self.select_components(idx_components=neurons_to_keep)
 
-
     def remove_duplicates(self, predictions=None, r_values=None, dist_thr=0.1, min_dist=10, thresh_subset=0.6, plot_duplicates=False):
         ''' remove neurons that heavily overlapand might be duplicates
 
-        @param predictions:
-        @param r_values:
-        @param dist_thr:
-        @param min_dist:
-        @param thresh_subset:
-        @param plot_duplicates:
-        @return:
+        Args:
+            predictions
+            r_values
+            dist_thr
+            min_dist
+            thresh_subset
+            plot_duplicates
         '''
         if self.A_thr is None:
             raise Exception('You need to compute thresolded components before calling remove_duplicates: use the threshold_components method')
@@ -894,6 +853,12 @@ class Estimates(object):
         print('Duplicates gt:' + str(len(duplicates_gt)))
         return duplicates_gt, indeces_keep_gt, indeces_remove_gt, D_gt, overlap_gt
 
+    def masks_2_neurofinder(self, dataset_name):
+        if self.A_thr is None:
+            raise Exception(
+                'You need to compute thresolded components before calling this method: use the threshold_components method')
+        bin_masks = self.A_thr.reshape([self.dims[0], self.dims[1], -1], order='F').transpose([2, 0, 1])
+        return nf_masks_to_neurof_dict(bin_masks, dataset_name)
 
 def compare_components(estimate_gt, estimate_cmp,  Cn=None, thresh_cost=.8, min_dist=10, print_assignment=False, labels=['GT', 'CMP'], plot_results=False):
     if estimate_gt.A_thr is None:
@@ -902,7 +867,6 @@ def compare_components(estimate_gt, estimate_cmp,  Cn=None, thresh_cost=.8, min_
     if estimate_cmp.A_thr is None:
         raise Exception(
             'You need to compute thresolded components for second argument before calling remove_duplicates: use the threshold_components method')
-
 
     if plot_results:
         plt.figure(figsize=(20, 10))

@@ -40,12 +40,10 @@ class CNMFParams(object):
         when initializing the CNMFParams object. Direct setting of the positional arguments in CNMFParams is only
         present for backwards compatibility reasons and should not be used if possible.
 
-        Parameters/Attributes
-        ----------
-
-        Any parameter that is not set get a default value specified
-        by the dictionary default options
-        DATA PARAMETERS (CNMFParams.data) #####
+        Args:
+            Any parameter that is not set get a default value specified
+            by the dictionary default options
+            DATA PARAMETERS (CNMFParams.data) #####
 
             fnames: list[str]
                 list of complete paths to files that need to be processed
@@ -94,10 +92,10 @@ class CNMFParams(object):
             remove_very_bad_comps: bool, default: True
                 Whether to remove (very) bad quality components during patch processing
 
-            ssub: float, default: 2
+            p_ssub: float, default: 2
                 Spatial downsampling factor
 
-            tsub: float, default: 2
+            p_tsub: float, default: 2
                 Temporal downsampling factor
 
             memory_fact: float, default: 1
@@ -235,7 +233,7 @@ class CNMFParams(object):
             n_pixels_per_process: int, default: 1000
                 number of pixels to be processed by each worker
 
-            thr_method: 'nrg'|'max', default: 'max'
+            thr_method: 'nrg'|'max', default: 'nrg'
                 thresholding method
 
             maxthr: float, default: 0.1
@@ -529,9 +527,9 @@ class CNMFParams(object):
             'remove_very_bad_comps': remove_very_bad_comps,
             'rf': rf,
             'skip_refinement': False,
-            'ssub': p_ssub,             # spatial downsampling factor
+            'p_ssub': p_ssub,             # spatial downsampling factor
             'stride': stride,
-            'tsub': p_tsub,             # temporal downsampling factor
+            'p_tsub': p_tsub,             # temporal downsampling factor
         }
 
         self.preprocess = {
@@ -600,7 +598,7 @@ class CNMFParams(object):
             'num_blocks_per_run': num_blocks_per_run,
             'se': None,                      # Morphological closing structuring element
             'ss': None,                      # Binary element for determining connectivity
-            'thr_method': 'max',             # Method of thresholding ('max' or 'nrg')
+            'thr_method': 'nrg',             # Method of thresholding ('max' or 'nrg')
             # whether to update the background components in the spatial phase
             'update_background_components': update_background_components,
         }
@@ -732,7 +730,14 @@ class CNMFParams(object):
             logging.warning("gnb={}, hence setting keys nb_patch and low_rank_background ".format(gnb) +
                             "in group patch automatically.")
             self.set('patch', {'nb_patch': gnb, 'low_rank_background': None})
-
+        if gnb == -1:
+            logging.warning("gnb=-1, hence setting key update_background_components " +
+                            "in group spatial automatically to False.")
+            self.set('spatial', {'update_background_components': False})
+        if method_init=='corr_pnr' and ring_size_factor is not None:
+            logging.warning("using CNMF-E's ringmodel for background hence setting key " + 
+                            "normalize_init in group init automatically to False.")
+            self.set('init', {'normalize_init': False})
 
     def set(self, group, val_dict, set_if_not_exists=False):
         """ Add key-value pairs to a group. Existing key-value pairs will be overwritten
@@ -741,8 +746,7 @@ class CNMFParams(object):
         Args:
             group: The name of the group.
             val_dict: A dictionary with key-value pairs to be set for the group.
-            set_if_not_exists: Whether to set a key-value pair in a group
-                               if the key does not currently exist in the group.
+            set_if_not_exists: Whether to set a key-value pair in a group if the key does not currently exist in the group.
         """
 
         if not hasattr(self, group):

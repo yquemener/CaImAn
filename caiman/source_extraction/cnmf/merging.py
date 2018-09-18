@@ -21,7 +21,6 @@ from .temporal import update_temporal_components
 from .deconvolution import constrained_foopsi
 from .utilities import update_order_greedy
 
-#%%
 def merge_components_placeholder(params):
     [Y, A,  b, C, f, S, sn_pix,
      temporal_params, spatial_params,
@@ -33,7 +32,7 @@ def merge_components_placeholder(params):
                            c1=c1, sn=sn, g=g)
 
     return A, C, nr, merged_ROIs, S, bl, c1, sn, g
-#%%
+
 def merge_components_parallel(Y, A, b, C, f, S, sn_pix, temporal_params, spatial_params, dview=None, thr=0.85, fast_merge=True, mx=1000, bl=None, c1=None, sn=None, g=None):
     parrllcomp, len_parrllcomp = update_order_greedy(A)
 
@@ -66,101 +65,92 @@ def merge_components_parallel(Y, A, b, C, f, S, sn_pix, temporal_params, spatial
 
     return A, C, nr, merged_ROIs, S, bl, c1, sn, g, subidx
 
-#%%
 def merge_components(Y, A, b, C, f, S, sn_pix, temporal_params, spatial_params, dview=None, thr=0.85, fast_merge=True, mx=1000, bl=None, c1=None, sn=None, g=None):
     """ Merging of spatially overlapping components that have highly correlated temporal activity
 
     The correlation threshold for merging overlapping components is user specified in thr
 
-Parameters:
------------
+    Args:
+        Y: np.ndarray
+            residual movie after subtracting all found components (Y_res = Y - A*C - b*f) (d x T)
 
-Y: np.ndarray
-     residual movie after subtracting all found components (Y_res = Y - A*C - b*f) (d x T)
+        A: sparse matrix
+            matrix of spatial components (d x K)
 
-A: sparse matrix
-     matrix of spatial components (d x K)
+        b: np.ndarray
+             spatial background (vector of length d)
+        
+        C: np.ndarray
+             matrix of temporal components (K x T)
+        
+        f:     np.ndarray
+             temporal background (vector of length T)
+        
+        S:     np.ndarray
+             matrix of deconvolved activity (spikes) (K x T)
+        
+        sn_pix: ndarray
+             noise standard deviation for each pixel
+        
+        temporal_params: dictionary
+             all the parameters that can be passed to the update_temporal_components function
+        
+        spatial_params: dictionary
+             all the parameters that can be passed to the update_spatial_components function
+        
+        thr:   scalar between 0 and 1
+             correlation threshold for merging (default 0.85)
+        
+        mx:    int
+             maximum number of merging operations (default 50)
+        
+        sn_pix:    nd.array
+             noise level for each pixel (vector of length d)
+        
+        fast_merge: bool
+            if true perform rank 1 merging, otherwise takes best neuron
+        
+        bl:
+             baseline for fluorescence trace for each row in C
+        c1:
+             initial concentration for each row in C
+        g:
+             discrete time constant for each row in C
+        sn:
+             noise level for each row in C
 
-b: np.ndarray
-     spatial background (vector of length d)
+    Returns:
+        A:     sparse matrix
+                matrix of merged spatial components (d x K)
+        
+        C:     np.ndarray
+                matrix of merged temporal components (K x T)
+        
+        nr:    int
+            number of components after merging
+        
+        merged_ROIs: list
+            index of components that have been merged
+        
+        S:     np.ndarray
+                matrix of merged deconvolved activity (spikes) (K x T)
+        
+        bl: float
+            baseline for fluorescence trace
+        
+        c1: float
+            initial concentration
+        
+        g:  float
+            discrete time constant
+        
+        sn: float
+            noise level
 
-C: np.ndarray
-     matrix of temporal components (K x T)
-
-f:     np.ndarray
-     temporal background (vector of length T)
-
-S:     np.ndarray
-     matrix of deconvolved activity (spikes) (K x T)
-
-sn_pix: ndarray
-     noise standard deviation for each pixel
-
-temporal_params: dictionary
-     all the parameters that can be passed to the update_temporal_components function
-
-spatial_params: dictionary
-     all the parameters that can be passed to the update_spatial_components function
-
-thr:   scalar between 0 and 1
-     correlation threshold for merging (default 0.85)
-
-mx:    int
-     maximum number of merging operations (default 50)
-
-sn_pix:    nd.array
-     noise level for each pixel (vector of length d)
-
-fast_merge: bool
-    if true perform rank 1 merging, otherwise takes best neuron
-
-bl:
-     baseline for fluorescence trace for each row in C
-c1:
-     initial concentration for each row in C
-g:
-     discrete time constant for each row in C
-sn:
-     noise level for each row in C
-
-Returns:
---------
-
-A:     sparse matrix
-        matrix of merged spatial components (d x K)
-
-C:     np.ndarray
-        matrix of merged temporal components (K x T)
-
-nr:    int
-    number of components after merging
-
-merged_ROIs: list
-    index of components that have been merged
-
-S:     np.ndarray
-        matrix of merged deconvolved activity (spikes) (K x T)
-
-bl: float
-    baseline for fluorescence trace
-
-c1: float
-    initial concentration
-
-g:  float
-    discrete time constant
-
-sn: float
-    noise level
-
-    Raise:
-    -----
-    Exception("The number of elements of bl\c1\g\sn must match the number of components")
-
-
-    See Also:
-    --------
+    Raises:
+        Exception "The number of elements of bl\c1\g\sn must match the number of components"
     """
+
     #tests and initialization
     nr = A.shape[1]
     if bl is not None and len(bl) != nr:
@@ -261,6 +251,8 @@ sn: float
                 for _ in range(10):
                     computedC = np.maximum(Acsc.T.dot(computedA).T.dot(
                         Ctmp) / (computedA.T * computedA), 0)
+                    if computedC * computedC.T == 0:
+                        break
                     computedA = np.maximum(
                         Acsc.dot(Ctmp.dot(computedC.T)) / (computedC * computedC.T), 0)
             else:
@@ -290,6 +282,16 @@ sn: float
             sn_merged[i] = sm
             g_merged[i, :] = gm
 
+        empty = np.ravel((C_merged.sum(1) == 0) + (A_merged.sum(0) == 0))
+        if np.any(empty):
+            A_merged = A_merged[:, ~empty]
+            C_merged = C_merged[~empty]
+            S_merged = S_merged[~empty]
+            bl_merged = bl_merged[~empty]
+            c1_merged = c1_merged[~empty]
+            sn_merged = sn_merged[~empty]
+            g_merged = g_merged[~empty]
+
         # we want to remove merged neuron from the initial part and replace them with merged ones
         neur_id = np.unique(np.hstack(merged_ROIs))
         good_neurons = np.setdiff1d(list(range(nr)), neur_id)
@@ -306,7 +308,7 @@ sn: float
             sn = np.hstack((sn[good_neurons], np.array(sn_merged).flatten()))
         if g is not None:
             g = np.vstack((np.vstack(g)[good_neurons], g_merged))
-        nr = nr - len(neur_id) + nbmrg
+        nr = nr - len(neur_id) + len(C_merged)
 
     else:
         print('No neurons merged!')
