@@ -531,7 +531,8 @@ def run_cnmf_ui(_):
 		Yr_reshaped = reshape_Yr(*context.YrDT)
 		#Y = np.reshape(Yr, dims + (T,), order='F')
 		#context.cnm.estimates.idx_components, context.idx_components_toss = filter_components()
-		context.cnm.estimates.filter_components(Yr_reshaped)
+		#TODO: fix this
+		#context.cnm.estimates.filter_components(Yr_reshaped)
 
 	else:
 		update_status("Skipping automatic results refinement...")
