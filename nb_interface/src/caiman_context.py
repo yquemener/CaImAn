@@ -62,7 +62,7 @@ class Context: #used to save data related to analysis (not serializable)
 			tmp_cnmf_params = self.cnmf_params
 			tmp_cnmf_params['dview'] = None  #we cannot pickle socket objects, must set to None
 			tmp_cnmf_params['n_processes'] = None
-
+		self.cnm.dview = None #dview is not pickle-able
 		tmpd = [
 			self.working_dir,
 			self.working_mc_files,

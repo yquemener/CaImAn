@@ -370,9 +370,9 @@ def corr_img(Yr, gSig, center_psf, plot=True):
 	return cn_raw, cn_filter, pnr, plot_
 
 def save_denoised_avi(data, dims, idx_components_keep, working_dir=""):
-	A, C, b, f, YrA, sn, idx_components, conv = data.estimates
+	A, C, b, f, YrA, sn, conv = data.estimates.A, data.estimates.C, data.estimates.b, \
+		data.estimates.f, data.estimates.YrA, data.estimates.sn, data.estimates.S
 	#idx_components = idx_components_keep
-	x = None
 	if type(A) != np.ndarray:
 		x = cm.movie(A.tocsc()[:, idx_components_keep].dot(C[idx_components_keep, :])).reshape(dims + (-1,), order='F').transpose([2, 0, 1])
 	else:

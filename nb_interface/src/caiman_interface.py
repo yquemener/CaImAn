@@ -393,22 +393,24 @@ def filter_components():
 	fr_ = float(fr_widget.value)
 	decay_time_ = float(decay_time_widget.value)
 
-	params = {'fr': fr_, 'decay_time': decay_time_, 'min_SNR':snr[1], \
+	paramsdict = {'fr': fr_, 'decay_time': decay_time_, 'min_SNR':snr[1], \
 		  'SNR_lowest':snr[0], 'rval_thr':rval[1], 'rval_lowest':rval[0], \
 		  'use_cnn':None, 'min_cnn_thr':cnn[1], \
 		  'cnn_lowest':cnn[0], 'gSig_range':gSig}
-
+	opts = params.CNMFParams(params_dict=paramsdict)
 	#cnm = context.cnm.filter_components(Yr_reshaped, **params)
 	#cmn = context.cnm.estimates.evaluate_components(Yr_reshaped, **params)
-	context.cnm.estimates.evaluate_components(Yr_reshaped, context.cnm.params, dview=context.cnm.dview)
+	#context.cnm.estimates.evaluate_components(Yr_reshaped, context.cnm.params, dview=context.cnm.dview)
+	#context.cnm.params
+	context.cnm.estimates.filter_components(Yr_reshaped, opts, dview=context.cnm.dview)
 	'''fr=fr_, decay_time=decay_time_, min_SNR=min_snr_, \
 				SNR_lowest=None, rval_thr=rval_thr_, rval_lowest=None, \
 				use_cnn=None, min_cnn_thr=cnn_thr_, \
 				cnn_lowest=None, gSig_range=None'''
-	context.cnm.dview = None #need to set to none to be pickle-able
+	#context.cnm.dview = None #need to set to none to be pickle-able
 	#context.cnm = cnm
-	context.cnm.estimates.idx_components, context.idx_components_toss = context.cnm.estimates.idx_components, context.cnm.estimates.idx_components_bad
-	return context.cnm.estimates.idx_components, context.idx_components_toss
+	#context.cnm.estimates.idx_components, context.idx_components_toss = context.cnm.estimates.idx_components, context.cnm.estimates.idx_components_bad
+	return context.cnm.estimates.idx_components, context.cnm.estimates.idx_components_bad
 
 @out.capture()
 def run_cnmf_ui(_):
@@ -524,15 +526,14 @@ def run_cnmf_ui(_):
 	#print("CNMF-E FINISHED!")
 	#update_status("CNMF Finished")
 	#results: A, C, b, f, YrA, sn, idx_components, S
-	refine_results = True#bool(refine_components_widget.value) #automatically refine results
+	refine_results = False#bool(refine_components_widget.value) #automatically refine results
 	save_movie_bool = bool(save_movie_widget.value)
+	context.cnm.estimates.idx_components = np.arange(context.cnm.estimates.A.shape[1])
 	if refine_results:
 		update_status("Automatically refining results...")
 		Yr_reshaped = reshape_Yr(*context.YrDT)
 		#Y = np.reshape(Yr, dims + (T,), order='F')
-		#context.cnm.estimates.idx_components, context.idx_components_toss = filter_components()
-		#TODO: fix this
-		#context.cnm.estimates.filter_components(Yr_reshaped)
+		context.cnm.estimates.idx_components, context.idx_components_toss = filter_components()
 
 	else:
 		update_status("Skipping automatic results refinement...")
@@ -591,7 +592,7 @@ def toggle_deconv(change):
 
 def download_data_func(_):
 	try:
-		A, C, b, f, YrA, sn, idx_components, conv = load_context_data(context)
+		A, C, b, f, YrA, sn, conv = load_context_data(context)
 	except Exception as e:
 		update_status("Error: Unable to load data.")
 		return None
@@ -674,7 +675,7 @@ def get_signal(C, index, conv=None):
 
 def slider_change(change):
 	global contours
-	A, C, b, f, YrA, sn, idx_components, conv = load_context_data(context)
+	A, C, b, f, YrA, sn, conv = load_context_data(context)
 	if type(A) != np.ndarray: #probably sparse array, need to convert to dense array in order to reshape
 		A = A.toarray()
 	dims = context.YrDT[1]
@@ -756,7 +757,7 @@ def update_plots(A, C, dims, conv, contours):
 
 def update_idx_components_plots():
 	idx_components_keep = list(context.cnm.estimates.idx_components)
-	A, C, b, f, YrA, sn, idx_components, conv = load_context_data(context)
+	A, C, b, f, YrA, sn, conv = load_context_data(context)
 	idx_components_keep = context.cnm.estimates.idx_components
 	A_ = A[:, idx_components_keep]
 	C_ = C[idx_components_keep, :]
@@ -775,7 +776,7 @@ def update_btn_click(_):
 
 	idx_components_keep, idx_components_toss = filter_components()
 
-	A, C, b, f, YrA, sn, idx_components, conv = load_context_data(context)
+	A, C, b, f, YrA, sn, conv = load_context_data(context)
 	idx_components_keep = context.cnm.estimates.idx_components
 	A_ = A[:, idx_components_keep]
 	C_ = C[idx_components_keep, :]
@@ -812,7 +813,8 @@ def show_cnmf_results_interface(context):
 	Yr_reshaped = reshape_Yr(Yr, dims, T) #np.rollaxis(np.reshape(Yr, dims + (T,), order='F'),2)
 	#interactive ROI refinement
 	try:
-		A, C, b, f, YrA, sn, idx_components, conv = load_context_data(context)
+		#A, C, b, f, YrA, sn, idx_components, conv = load_context_data(context)
+		A, C, b, f, YrA, sn, conv = load_context_data(context)
 	except:
 		update_status("Error: Unable to load data.")
 		return None
@@ -992,6 +994,7 @@ def getYrDT():
 #@out.capture()
 def view_cnmf_mov_click(_):
 	update_status("Launching movie")
+	estimates = context.cnm.estimates
 	A, C, b, f, YrA, sn, conv = estimates.A, estimates.C, estimates.b, \
 								estimates.f, estimates.YrA, estimates.sn, estimates.S#context.cnm.estimates
 	Yr, dims, T = getYrDT()
@@ -1002,6 +1005,7 @@ def view_cnmf_mov_click(_):
 
 def view_bgmov_click(_):
 	update_status("Launching movie")
+	estimates = context.cnm.estimates
 	Yr, dims, T = getYrDT()
 	Y = Yr.T.reshape((T,) + dims, order='F')
 	A, C, b, f, YrA, sn, conv = estimates.A, estimates.C, estimates.b, \
@@ -1013,6 +1017,7 @@ def view_bgmov_click(_):
 
 def view_residual_click(_):
 	update_status("Launching movie")
+	estimates = context.cnm.estimates
 	A, C, b, f, YrA, sn, conv = estimates.A, estimates.C, estimates.b, \
 								estimates.f, estimates.YrA, estimates.sn, estimates.S
 	Yr, dims, T = getYrDT()

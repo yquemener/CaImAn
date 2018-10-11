@@ -18,4 +18,5 @@ pip install -e .
 
 #mkdir nb_interface
 cp -a $SRC_DIR/nb_interface/. $PREFIX/bin/nb_interface
+cp -a $SRC_DIR/example_movies/. $PREFIX/bin/example_movies
 echo "---------------- Finished build.sh ----------------"
