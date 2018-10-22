@@ -21,8 +21,14 @@ from caiman_interface import context
 import peakutils
 
 def setup_context(context):
-    if len(context.cnmf_results) > 0:
-        signal_data = context.cnmf_results[1]
+    #if len(context.cnmf_results) > 0:
+    try:
+        x = context.cnm.estimates.C
+    except NameError:
+        x = None
+    if x is not None
+        #signal_data = context.cnmf_results[1]
+        signal_data = context.cnm.estimates.C
     else:
         signal_data = None
     return signal_data

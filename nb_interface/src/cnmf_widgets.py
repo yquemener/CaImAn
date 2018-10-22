@@ -85,7 +85,7 @@ k_widget = widgets.BoundedIntText(
 	layout=ds_layout
 )
 gSig_widget = widgets.BoundedIntText(
-	value=4,
+	value=6,
 	min=1,
 	max=50,
 	step=1,
@@ -106,7 +106,7 @@ gSiz_widget = widgets.BoundedIntText(
 )
 
 stride_widget = widgets.BoundedIntText(
-	value=20,
+	value=6,
 	min=1,
 	max=50,
 	step=1,
@@ -117,7 +117,7 @@ stride_widget = widgets.BoundedIntText(
 )
 
 rf_widget = widgets.BoundedIntText(
-	value=40,
+	value=10,
 	min=1,
 	max=75,
 	step=1,
@@ -203,7 +203,7 @@ rval_thr = 0.8              # space correlation threshold for accepting a compon
 cnn_thr = 0.8               # threshold for CNN based classifier '''
 
 p_widget = widgets.BoundedIntText(
-	value=1,
+	value=2,
 	min=1,
 	max=2,
 	step=1,
@@ -256,9 +256,9 @@ min_snr_widget = widgets.BoundedFloatText(
 )
 
 rval_thr_widget = widgets.BoundedFloatText(
-	value=0.8,
-	min=0.0,
-	max=50.0,
+	value=0.9,
+	min=-1.0,
+	max=1.0,
 	step=0.1,
 	#description='Spatial Correlation Threshold (rval_thr):',
 	disabled=False,
@@ -267,7 +267,7 @@ rval_thr_widget = widgets.BoundedFloatText(
 rval_thr_box = widgets.HBox([widgets.Label(value="Spatial Correlation Threshold (rval_thr):"),rval_thr_widget])
 
 cnn_thr_widget = widgets.BoundedFloatText(
-	value=0.8,
+	value=0.95,
 	min=0.0,
 	max=50.0,
 	step=0.1,

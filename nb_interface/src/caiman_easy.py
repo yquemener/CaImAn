@@ -25,6 +25,7 @@ from caiman.components_evaluation import estimate_components_quality_auto
 from caiman.motion_correction import motion_correct_oneP_rigid, motion_correct_oneP_nonrigid
 from caiman.source_extraction.cnmf.utilities import detrend_df_f, detrend_df_f_auto
 import scipy
+import logging
 import pylab as pl
 import matplotlib as mpl
 import matplotlib.cm as mcm
@@ -60,6 +61,9 @@ from caiman_context import *
 #@out.capture()()
 def start_procs(backend='local',n_processes=None):
 	c, dview, n_processes = cm.cluster.setup_cluster(backend=backend, n_processes=n_processes, single_thread=False)
+	logging.basicConfig(format=
+	                          "%(relativeCreated)12d [%(filename)s:%(funcName)20s():%(lineno)s] [%(process)d] %(message)s",
+							  level=logging.INFO)
 	return c, dview, n_processes
 
 

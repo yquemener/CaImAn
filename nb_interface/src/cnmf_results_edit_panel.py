@@ -93,16 +93,22 @@ gSig_edit_widget_ = widgets.IntRangeSlider(
 	disabled=False,
 	#layout=widgets.Layout(width="90%")
 )
-
+reset_edit_btn = widgets.Button(
+	description='Reset',
+	disabled=False,
+	button_style='info', # 'success', 'info', 'warning', 'danger' or ''
+	tooltip='Reset ROIs',
+	layout=widgets.Layout(width="45%")
+)
 update_edit_btn = widgets.Button(
 	description='Update',
 	disabled=False,
 	button_style='info', # 'success', 'info', 'warning', 'danger' or ''
 	tooltip='Refine ROIs',
-	layout=widgets.Layout(width="50%")
+	layout=widgets.Layout(width="45%")
 )
 
 edit_panel_widget = widgets.VBox([min_snr_edit_widget, rvalmin_edit_widget, \
-			cnnmin_edit_widget], layout=widgets.Layout(display='None'))
+			cnnmin_edit_widget, reset_edit_btn, update_edit_btn], layout=widgets.Layout(display='None'))
 
 #--------------- END EDIT PANEL
