@@ -1,4 +1,7 @@
 import ipywidgets as widgets
+'''
+This file includes the widgets for the console/log textbox and status bar.
+'''
 
 out = widgets.Output(layout={'border': '1px solid black', 'height':'700px', 'overflow-y':'scroll'})
 clear_console_btn = widgets.Button(

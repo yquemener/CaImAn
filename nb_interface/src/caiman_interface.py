@@ -32,6 +32,26 @@ Interface Code Developed by Brandon Brown in the Khakh Lab at UCLA
 Nov 2017
 '''
 
+'''
+caiman_interface.py is the main logic of the interface
+This file has all the functions that are triggered by interface
+button clicks and interactions. Much of the computations or caiman
+algorithms are in turn triggered by calls to functions defined in the
+caiman_easy.py file.
+
+The interface widgets are defined in separate files, organized according
+to the section of the interface to which they belong. For example,
+the results plot widgets are defined in cnmf_results_widgets.py file and imported.
+
+This file sets up the event hooks for all the widgets, so it defines
+which methods will be called if a widget is clicked on for example. If a button
+is clicked, it will call a function in caiman_interface.py. The function here
+may call on a different function that is defined in caiman_easy.py. Each widget
+is an object with methods and parameters that can be modified and will be automatically
+updated on the client-side browser via automatically generated javascript.
+
+'''
+
 #create context
 context = Context(start_procs(backend='local',n_processes=None))
 

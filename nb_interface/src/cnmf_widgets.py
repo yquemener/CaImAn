@@ -3,7 +3,9 @@ import os
 from file_browser import FileBrowserBtn
 
 
-
+'''
+This file includes the widgets for the CNMF tab
+'''
 
 #####
 layout_small = widgets.Layout(width="10%")

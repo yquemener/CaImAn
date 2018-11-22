@@ -52,6 +52,18 @@ Interface Code Developed by Brandon Brown in the Khakh Lab at UCLA
 Nov 2017
 '''
 
+'''
+caiman_interface.py is the main logic of the interface
+This file has all the functions that are triggered by interface
+button clicks and interactions. Much of the computations or caiman
+algorithms are in turn triggered by calls to functions defined in the
+caiman_easy.py file.
+
+The interface widgets are defined in separate files, organized according
+to the section of the interface to which they belong. For example,
+the results plot widgets are defined in cnmf_results_widgets.py file and imported.
+'''
+
 #Import the context that will save information through the analysis pipeline
 from caiman_context import *
 

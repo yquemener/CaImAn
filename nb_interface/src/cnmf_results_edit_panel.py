@@ -2,6 +2,10 @@ from ipywidgets import interact, interactive, fixed, interact_manual, HBox, VBox
 import ipywidgets as widgets
 import os
 
+'''
+This file contains widgets for the edit panel section of the interface
+'''
+
 #---------------- EDIT PANEL
 # need: min_SNR, r_values_min, r_values_lowest, thresh_cnn_min,
 # thresh_cnn_lowest,thresh_fitness_delta, min_std_reject

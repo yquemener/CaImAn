@@ -1,7 +1,9 @@
 import ipywidgets as widgets
 import os
 from file_browser import FileBrowserBtn, DirBrowserBtn
-
+'''
+This file includes the widgets shown on the first, main tab of the interface
+'''
 #ds_layout_main = widgets.Layout(width="20%")
 
 workingdir_selector = widgets.Text(

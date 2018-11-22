@@ -6,7 +6,10 @@ from bqplot import (
 	Axis, Scatter, Lines, CATEGORY10, Label, Figure, Tooltip, Toolbar
 )
 import os
+'''
+This file includes all the widgets for plotting the results of CNMF
 
+'''
 
 # This file defines the bqplot components for the cnmf_results viewer
 

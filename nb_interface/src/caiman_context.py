@@ -1,7 +1,14 @@
 
 import pickle
 ######
+'''
+This file contains the class definition for the context object.
+The context object is used to store information about the current
+session of work, including the work directory and the cnmf results.
 
+It is a pickle-able object and there are functions to save and
+load a context file.
+'''
 #@out.capture()()
 def save_obj(path, obj):
     with open(path + '.pkl', 'wb') as f:

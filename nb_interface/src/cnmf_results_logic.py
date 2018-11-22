@@ -7,6 +7,14 @@ from ipywidgets import interact, interactive, fixed, interact_manual, HBox, VBox
 import ipywidgets as widgets
 import os
 
+'''
+This file contains a single function that takes a context object
+and returns a tuple of data from the context object.
+
+The context object is a class object that is used to store information
+about the session. It is a pickle-able object and can be saved and loaded.
+'''
+
 def load_context_data(context):
 	try:
 		est = context.cnm.estimates

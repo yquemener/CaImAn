@@ -3,7 +3,9 @@ import os
 import bqplot
 from file_browser import FileBrowserBtn
 ##### Motion Correction Widgets
-
+'''
+This file includes the widgets for the motion correction tab
+'''
 layout_small = widgets.Layout(width="10%")
 
 file_selector = widgets.Text(

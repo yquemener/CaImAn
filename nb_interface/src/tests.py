@@ -1,5 +1,13 @@
 import unittest
 
+'''
+This file will include test functions to allow automated testing
+of the interface. It is under development. It is difficult to automate
+full testing of the notebook but at least many of the functions can be tested.
+
+'''
+
+
 class TestMotionCorrection(unittest.TestCase):
 
 	'''    def test_upper(self):
