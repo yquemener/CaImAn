@@ -28,7 +28,6 @@ import logging
 from matplotlib import animation
 import numpy as np
 import os
-import pickle as cpk
 import pylab as pl
 import scipy.ndimage
 import scipy
@@ -43,6 +42,10 @@ import sys
 import tifffile
 from tqdm import tqdm
 import warnings
+from zipfile import ZipFile
+from PIL import Image  # $ pip install pillow
+import caiman as cm
+
 
 from . import timeseries
 
@@ -1159,9 +1162,19 @@ def load(file_name,fr=30,start_time=0,meta_data=None,subindices=None,shape=None,
             with tifffile.TiffFile(file_name) as tffl:
                 if subindices is not None:
                     if type(subindices) is list:
-                        input_arr  = tffl.asarray(key=subindices[0])[:, subindices[1], subindices[2]]
+                        try:
+                            input_arr  = tffl.asarray(key=subindices[0])[:, subindices[1], subindices[2]]
+                        except:
+                            logging.warning('Your tif file is saved a single page file. Performance will be affected')
+                            input_arr = tffl.asarray()
+                            input_arr = input_arr[subindices[0], subindices[1], subindices[2]]
                     else:
-                        input_arr  = tffl.asarray(key=subindices)
+                        try:
+                            input_arr  = tffl.asarray(key=subindices)
+                        except:
+                            logging.warning('Your tif file is saved a single page file. Performance will be affected')
+                            input_arr = tffl.asarray()
+                            input_arr = input_arr[subindices[0]]
 
                 else:
                     input_arr = tffl.asarray()
@@ -1604,5 +1617,65 @@ def to_3D(mov2D, shape, order='F'):
     """
     return np.reshape(mov2D, shape, order=order)
 
+#%%
+def from_zip_file_to_movie(zipfile_name, start_end = None):
+    '''
 
+    @param zipfile_name:
+    @param start_end: tuple
+        start and end frame to extract
+    @return:
+    '''
+    mov = []
+    print('unzipping file into movie object')
+    if start_end is not None:
+        num_frames = start_end[1] - start_end[0]
+
+    counter = 0
+    with ZipFile(zipfile_name) as archive:
+        for idx, entry in enumerate(archive.infolist()):
+            if idx >= start_end[0] and idx < start_end[1]:
+                with archive.open(entry) as file:
+                    if counter == 0:
+                        img = np.array(Image.open(file))
+                        mov = np.zeros([num_frames, *img.shape], dtype=np.float32)
+                        mov[counter] = img
+                    else:
+                        mov[counter] = np.array(Image.open(file))
+
+
+                    if counter % 100 == 0:
+                        print([counter, idx])
+
+                    counter += 1
+
+    return cm.movie(mov[:counter])
+
+def from_zipfiles_to_movie_lists(zipfile_name, max_frames_per_movie=3000, binary = False):
+    '''
+    Transform zip file into set of tif movies
+    @param zipfile_name:
+    @param max_frames_per_movie:
+    @return:
+    '''
+    with ZipFile(zipfile_name) as archive:
+        num_frames_total = len(archive.infolist())
+
+    base_file_names = os.path.split(zipfile_name)[0]
+    start_frames = np.arange(0,num_frames_total, max_frames_per_movie)
+
+    movie_list = []
+    for sf in start_frames:
+
+        mov = from_zip_file_to_movie(zipfile_name, start_end=(sf, sf + max_frames_per_movie))
+        if binary:
+            fname = os.path.join(base_file_names, 'movie_' + str(sf) + '.mmap')
+            fname = mov.save(fname, order='C')
+        else:
+            fname = os.path.join(base_file_names, 'movie_' + str(sf) + '.tif')
+            mov.save(fname)
+
+        movie_list.append(fname)
+
+    return movie_list
 

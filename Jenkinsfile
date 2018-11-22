@@ -24,9 +24,11 @@ pipeline {
             sh 'conda env create -q -f environment.yml -p $CONDA_ENV'
             sh '''#!/bin/bash -ex
               source $CONDA_ENV/bin/activate $CONDA_ENV
+              export KERAS_BACKEND=tensorflow
               pip install .
               TEMPDIR=$(mktemp -d)
               export CAIMAN_DATA=$TEMPDIR/caiman_data
+              export THEANO_FLAGS="base_compiledir=$TEMPDIR/theano_tmp"
               cd $TEMPDIR
               caimanmanager.py install
               nosetests --traverse-namespace caiman
@@ -67,8 +69,9 @@ pipeline {
           }
           steps {
             bat '%ANACONDA3%\\scripts\\conda info'
-            bat '%ANACONDA3%\\scripts\\conda env create -q -f environment.yml -p %CONDA_ENV%'
-            bat '%ANACONDA3%\\scripts\\activate %CONDA_ENV% && pip install . && copy caimanmanager.py %TEMP% && cd %TEMP% && set "CAIMAN_DATA=%TEMP%\\caiman_data" && (if exist caiman_data (rmdir caiman_data /s /q && echo "Removed old caiman_data" ) else (echo "Host is fresh")) && python caimanmanager.py install --force && python caimanmanager.py test'
+            bat '%ANACONDA3%\\scripts\\conda env create -q -f environment.yml -p %CONDA_ENV% && %ANACONDA3%\\scripts\\conda upgrade -n %CONDA_ENV% numpy opencv'
+            bat 'del "%CONDA_ENV%\\etc\\conda\\activate.d\\vs2015_compiler_vars.bat'
+            bat '%ANACONDA3%\\scripts\\activate %CONDA_ENV% && set KERAS_BACKEND=tensorflow && pip install . && copy caimanmanager.py %TEMP% && cd %TEMP% && set "CAIMAN_DATA=%TEMP%\\caiman_data" && (if exist caiman_data (rmdir caiman_data /s /q && echo "Removed old caiman_data" ) else (echo "Host is fresh")) && python caimanmanager.py install --force && python caimanmanager.py test'
           }
         }
       }
