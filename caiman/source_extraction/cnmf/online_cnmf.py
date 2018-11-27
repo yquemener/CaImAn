@@ -262,40 +262,18 @@ class OnACID(object):
         if len(self.estimates.ind_new) > 0:
             self.estimates.mean_buff = self.estimates.Yres_buf.mean(0)
 
-        if (not self.params.get('online', 'simultaneously')) or self.params.get('preprocess', 'p') == 0:
-            # get noisy fluor value via NNLS (project data on shapes & demix)
-            C_in = self.estimates.noisyC[:self.M, t - 1].copy()
-            self.estimates.C_on[:self.M, t], self.estimates.noisyC[:self.M, t] = HALS4activity(
-                frame, self.estimates.Ab, C_in, self.estimates.AtA, iters=num_iters_hals, groups=self.estimates.groups)
-            if self.params.get('preprocess', 'p'):
-                # denoise & deconvolve
-                for i, o in enumerate(self.estimates.OASISinstances):
-                    o.fit_next(self.estimates.noisyC[nb_ + i, t])
-                    self.estimates.C_on[nb_ + i, t - o.get_l_of_last_pool() +
-                              1: t + 1] = o.get_c_of_last_pool()
+        # get noisy fluor value via NNLS (project data on shapes & demix)
+        self.regress_frame(frame, nb_, num_iters_hals, t)
 
-        else:
-            # update buffer, initialize C with previous value
-            self.estimates.C_on[:, t] = self.estimates.C_on[:, t - 1]
-            self.estimates.noisyC[:, t] = self.estimates.C_on[:, t - 1]
-            self.estimates.AtY_buf = np.concatenate((self.estimates.AtY_buf[:, 1:], self.estimates.Ab.T.dot(frame)[:, None]), 1) \
-                if self.params.get('online', 'n_refit') else self.estimates.Ab.T.dot(frame)[:, None]
-            # demix, denoise & deconvolve
-            (self.estimates.C_on[:self.M, t + 1 - mbs:t + 1], self.estimates.noisyC[:self.M, t + 1 - mbs:t + 1],
-                self.estimates.OASISinstances) = demix_and_deconvolve(
-                self.estimates.C_on[:self.M, t + 1 - mbs:t + 1],
-                self.estimates.noisyC[:self.M, t + 1 - mbs:t + 1],
-                self.estimates.AtY_buf, self.estimates.AtA, self.estimates.OASISinstances, iters=num_iters_hals,
-                n_refit=self.params.get('online', 'n_refit'))
-            for i, o in enumerate(self.estimates.OASISinstances):
-                self.estimates.C_on[nb_ + i, t - o.get_l_of_last_pool() + 1: t +
-                          1] = o.get_c_of_last_pool()
 
         #self.estimates.mean_buff = self.estimates.Yres_buf.mean(0)
         res_frame = frame - self.estimates.Ab.dot(self.estimates.C_on[:self.M, t])
         mn_ = self.estimates.mn.copy()
+        # mean residual
         self.estimates.mn = (t-1)/t*self.estimates.mn + res_frame/t
+        # variance of pixels residual
         self.estimates.vr = (t-1)/t*self.estimates.vr + (res_frame - mn_)*(res_frame - self.estimates.mn)/t
+        # std of pixels residual
         self.estimates.sn = np.sqrt(self.estimates.vr)
         
         t_new = time()
@@ -547,6 +525,17 @@ class OnACID(object):
 
         return self
 
+    def regress_frame(self, frame, nb_, num_iters_hals, t):
+
+        self.estimates.C_on[:self.M, t], self.estimates.noisyC[:self.M, t] = HALS4activity(
+            frame, self.estimates.Ab, self.estimates.noisyC[:self.M, t-1].copy(), self.estimates.AtA, iters=num_iters_hals, groups=self.estimates.groups)
+        if self.params.get('preprocess', 'p'):
+            # denoise & deconvolve
+            for i, o in enumerate(self.estimates.OASISinstances):
+                o.fit_next(self.estimates.noisyC[nb_ + i, t])
+                self.estimates.C_on[nb_ + i, t - o.get_l_of_last_pool() +
+                                             1: t + 1] = o.get_c_of_last_pool()
+
     def initialize_online(self):
         fls = self.params.get('data', 'fnames')
         opts = self.params.get_group('online')
@@ -690,6 +679,7 @@ class OnACID(object):
         init_batch = self.params.get('online', 'init_batch')
         epochs = self.params.get('online', 'epochs')
         self.initialize_online()
+        # self.estimate = pretend_estimate
         extra_files = len(fls) - 1
         init_files = 1
         t = init_batch
