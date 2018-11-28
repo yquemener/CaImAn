@@ -478,7 +478,6 @@ class OnACID(object):
                     #Ab_ = Ab_[:,ind_keep]
                     Ab_ = csc_matrix(Ab_[:, ind_keep])
                     #Ab_ = csc_matrix(self.estimates.Ab_dense[:,:self.M])
-                    self.Ab_dense_copy = self.estimates.Ab_dense
                     self.Ab_copy = Ab_
                     self.estimates.Ab = Ab_
                     self.ind_A = list(
