@@ -290,11 +290,24 @@ class OnACID(object):
             rho = np.reshape(rho, np.prod(self.params.get('data', 'dims')))
             self.estimates.rho_buf.append(rho)
 
+###
+            gHalf = np.array(self.params.get('init', 'gSiz')) // 2
+            self.estimates.sv -= self.estimates.rho_buf.get_first()
+            # update variance of residual buffer
+            self.estimates.sv += self.estimates.rho_buf.get_last_frames(1).squeeze()
+            self.estimates.sv = np.maximum(self.estimates.sv, 0)
+
+            Ains, Cins, Cins_res, inds, ijsig_all, self.cnn_pos, local_max = get_candidate_components(
+                self.estimates.sv, self.params.get('data', 'dims'), Yres_buf=self.estimates.Yres_buf, min_num_trial=self.params.get('online', 'min_num_trial'), gSig=self.params.get('init', 'gSig'),
+                gHalf=gHalf, sniper_mode=self.params.get('online', 'sniper_mode'), rval_thr=self.params.get('online', 'rval_thr'), patch_size=50,
+                loaded_model=self.loaded_model, thresh_CNN_noisy=self.params.get('online', 'thresh_CNN_noisy'),
+                use_peak_max=self.params.get('online', 'use_peak_max'), test_both=self.params.get('online', 'test_both'), mean_buff=self.estimates.mean_buff)
+
             (self.estimates.Ab, Cf_temp, self.estimates.Yres_buf, self.estimates.rho_buf,
                 self.estimates.CC, self.estimates.CY, self.ind_A, self.estimates.sv,
                 self.estimates.groups, self.estimates.ind_new, self.ind_new_all,
-                self.estimates.sv, self.cnn_pos) = update_num_components(
-                t, self.estimates.sv, self.estimates.Ab, self.estimates.C_on[:self.M, (t - mbs + 1):(t + 1)],
+                self.estimates.sv) = update_num_components(
+                self.estimates.sv, self.estimates.Ab, self.estimates.C_on[:self.M, (t - mbs + 1):(t + 1)],
                 self.estimates.Yres_buf, self.estimates.Yr_buf, self.estimates.rho_buf,
                 self.params.get('data', 'dims'), self.params.get('init', 'gSig'),
                 self.params.get('init', 'gSiz'), self.ind_A, self.estimates.CY, self.estimates.CC,
@@ -308,14 +321,7 @@ class OnACID(object):
                     np.mean(self.estimates.g, 0)), s_min=self.params.get('temporal', 's_min'),
                 Ab_dense=self.estimates.Ab_dense if self.params.get('online', 'use_dense') else None,
                 oases=self.estimates.OASISinstances if self.params.get('preprocess', 'p') else None,
-                N_samples_exceptionality=self.params.get('online', 'N_samples_exceptionality'),
-                max_num_added=self.params.get('online', 'max_num_added'),
-                min_num_trial=self.params.get('online', 'min_num_trial'),
-                loaded_model = self.loaded_model, test_both=self.params.get('online', 'test_both'),
-                thresh_CNN_noisy = self.params.get('online', 'thresh_CNN_noisy'),
-                sniper_mode=self.params.get('online', 'sniper_mode'),
-                use_peak_max=self.params.get('online', 'use_peak_max'),
-                mean_buff=self.estimates.mean_buff)
+                N_samples_exceptionality=self.params.get('online', 'N_samples_exceptionality'))
 
             num_added = len(self.ind_A) - self.N
 
@@ -1515,38 +1521,28 @@ def get_candidate_components(sv, dims, Yres_buf, min_num_trial=3, gSig=(5, 5),
 
 #%%
 @profile
-def update_num_components(t, sv, Ab, Cf, Yres_buf, Y_buf, rho_buf,
+def update_num_components(sv, Ab, Cf, Yres_buf, Y_buf, rho_buf,
                           dims, gSig, gSiz, ind_A, CY, CC, groups, oases, gnb=1,
                           rval_thr=0.875, bSiz=3, robust_std=False,
                           N_samples_exceptionality=5, remove_baseline=True,
                           thresh_fitness_delta=-80, thresh_fitness_raw=-20,
                           thresh_overlap=0.25, batch_update_suff_stat=False,
                           sn=None, g=None, thresh_s_min=None, s_min=None,
-                          Ab_dense=None, max_num_added=1, min_num_trial=1,
-                          loaded_model=None, thresh_CNN_noisy=0.99,
-                          sniper_mode=False, use_peak_max=False,
-                          test_both=False, mean_buff=None):
+                          Ab_dense=None):
     """
     Checks for new components in the residual buffer and incorporates them if they pass the acceptance tests
-    """
-
+    """    
     ind_new = []
-    gHalf = np.array(gSiz) // 2
 
     # number of total components (including background)
     M = np.shape(Ab)[-1]
     N = M - gnb                 # number of coponents (without background)
 
-    sv -= rho_buf.get_first()
-    # update variance of residual buffer
-    sv += rho_buf.get_last_frames(1).squeeze()
-    sv = np.maximum(sv, 0)
-
-    Ains, Cins, Cins_res, inds, ijsig_all, cnn_pos, local_max = get_candidate_components(
-        sv, dims, Yres_buf=Yres_buf, min_num_trial=min_num_trial, gSig=gSig,
-        gHalf=gHalf, sniper_mode=sniper_mode, rval_thr=rval_thr, patch_size=50,
-        loaded_model=loaded_model, thresh_CNN_noisy=thresh_CNN_noisy,
-        use_peak_max=use_peak_max, test_both=test_both, mean_buff=mean_buff)
+    # Ains, Cins, Cins_res, inds, ijsig_all, cnn_pos, local_max = get_candidate_components(
+    #     sv, dims, Yres_buf=Yres_buf, min_num_trial=min_num_trial, gSig=gSig,
+    #     gHalf=gHalf, sniper_mode=sniper_mode, rval_thr=rval_thr, patch_size=50,
+    #     loaded_model=loaded_model, thresh_CNN_noisy=thresh_CNN_noisy,
+    #     use_peak_max=use_peak_max, test_both=test_both, mean_buff=mean_buff)
 
     ind_new_all = ijsig_all
 
@@ -1722,7 +1718,7 @@ def update_num_components(t, sv, Ab, Cf, Yres_buf, Y_buf, rho_buf,
 #    plt.cla()
 #    plt.imshow(Yres_buf.mean(0).reshape(dims, order = 'F'))
 #    plt.pause(.05)
-    return Ab, Cf, Yres_buf, rho_buf, CC, CY, ind_A, sv, groups, ind_new, ind_new_all, sv, cnn_pos
+    return Ab, Cf, Yres_buf, rho_buf, CC, CY, ind_A, sv, groups, ind_new, ind_new_all, sv
 
 
 #%% remove components online
