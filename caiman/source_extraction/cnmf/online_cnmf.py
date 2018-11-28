@@ -264,7 +264,7 @@ class OnACID(object):
 
         # get noisy fluor value via NNLS (project data on shapes & demix)
         self.regress_frame(frame, nb_, num_iters_hals, t)
-
+        # !! HERE REMOVED SIMULTANEOUS DECONV!
 
         #self.estimates.mean_buff = self.estimates.Yres_buf.mean(0)
         res_frame = frame - self.estimates.Ab.dot(self.estimates.C_on[:self.M, t])
@@ -323,24 +323,9 @@ class OnACID(object):
                 self.N += num_added
                 self.M += num_added
                 if self.N + self.params.get('online', 'max_num_added') > expected_comps:
-                    expected_comps += 200
-                    self.params.set('online', {'expected_comps': expected_comps})
-                    self.estimates.CY.resize(
-                        [expected_comps + nb_, self.estimates.CY.shape[-1]])
-                    # refcheck can trigger "ValueError: cannot resize an array references or is referenced
-                    #                       by another array in this way.  Use the resize function"
-                    # np.resize didn't work, but refcheck=False seems fine
-                    self.estimates.C_on.resize(
-                        [expected_comps + nb_, self.estimates.C_on.shape[-1]], refcheck=False)
-                    self.estimates.noisyC.resize(
-                        [expected_comps + nb_, self.estimates.C_on.shape[-1]])
-                    if self.params.get('online', 'use_dense'):  # resize won't work due to contingency issue
-                        # self.estimates.Ab_dense.resize([self.estimates.CY.shape[-1], expected_comps+nb_])
-                        self.estimates.Ab_dense = np.zeros((self.estimates.CY.shape[-1], expected_comps + nb_),
-                                                 dtype=np.float32)
-                        self.estimates.Ab_dense[:, :Ab_.shape[1]] = Ab_.toarray()
-                    print('Increasing number of expected components to:' +
-                          str(expected_comps))
+                    raise Exception('Too Many components added')
+
+
                 self.update_counter.resize(self.N)
 
                 self.estimates.noisyC[self.M - num_added:self.M, t - mbs +
