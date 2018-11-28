@@ -289,6 +289,7 @@ class OnACID(object):
                 self.estimates.Yres_buf, self.estimates.Yr_buf, self.estimates.rho_buf,
                 self.params.get('data', 'dims'), self.params.get('init', 'gSig'),
                 self.params.get('init', 'gSiz'), self.ind_A, self.estimates.CY, self.estimates.CC,
+                Ains, Cins, Cins_res, inds, ijsig_all,
                 rval_thr=self.params.get('online', 'rval_thr'),
                 thresh_fitness_delta=self.params.get('online', 'thresh_fitness_delta'),
                 thresh_fitness_raw=self.params.get('online', 'thresh_fitness_raw'),
@@ -1550,7 +1551,8 @@ def get_candidate_components(sv, dims, Yres_buf, min_num_trial=3, gSig=(5, 5),
 #%%
 @profile
 def update_num_components(sv, Ab, Cf, Yres_buf, Y_buf, rho_buf,
-                          dims, gSig, gSiz, ind_A, CY, CC, groups, oases, gnb=1,
+                          dims, gSig, gSiz, ind_A, CY, CC, Ains, Cins, Cins_res, inds, ijsig_all,
+                          groups, oases, gnb=1,
                           rval_thr=0.875, bSiz=3, robust_std=False,
                           N_samples_exceptionality=5, remove_baseline=True,
                           thresh_fitness_delta=-80, thresh_fitness_raw=-20,
