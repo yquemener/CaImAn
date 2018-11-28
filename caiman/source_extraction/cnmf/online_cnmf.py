@@ -285,11 +285,11 @@ class OnACID(object):
             (self.estimates.Ab, Cf_temp, self.estimates.Yres_buf, self.estimates.rho_buf,
                 self.estimates.CC, self.estimates.CY, self.ind_A, self.estimates.sv,
                 self.estimates.groups, self.estimates.ind_new, self.ind_new_all) = update_num_components(
-                self.estimates.sv, self.estimates.Ab, self.estimates.C_on[:self.M, (t - mbs + 1):(t + 1)],
+                t, self.estimates.sv, self.estimates.Ab, self.estimates.C_on[:self.M, (t - mbs + 1):(t + 1)],
                 self.estimates.Yres_buf, self.estimates.Yr_buf, self.estimates.rho_buf,
                 self.params.get('data', 'dims'), self.params.get('init', 'gSig'),
                 self.params.get('init', 'gSiz'), self.ind_A, self.estimates.CY, self.estimates.CC,
-                Ains, Cins, Cins_res, inds, ijsig_all,
+                Ains, Cins, Cins_res, inds, ijsig_all, gHalf=gHalf,
                 rval_thr=self.params.get('online', 'rval_thr'),
                 thresh_fitness_delta=self.params.get('online', 'thresh_fitness_delta'),
                 thresh_fitness_raw=self.params.get('online', 'thresh_fitness_raw'),
@@ -1550,9 +1550,9 @@ def get_candidate_components(sv, dims, Yres_buf, min_num_trial=3, gSig=(5, 5),
 
 #%%
 @profile
-def update_num_components(sv, Ab, Cf, Yres_buf, Y_buf, rho_buf,
+def update_num_components(t, sv, Ab, Cf, Yres_buf, Y_buf, rho_buf,
                           dims, gSig, gSiz, ind_A, CY, CC, Ains, Cins, Cins_res, inds, ijsig_all,
-                          groups, oases, gnb=1,
+                          groups, oases, gnb=1, gHalf=(5,5),
                           rval_thr=0.875, bSiz=3, robust_std=False,
                           N_samples_exceptionality=5, remove_baseline=True,
                           thresh_fitness_delta=-80, thresh_fitness_raw=-20,
