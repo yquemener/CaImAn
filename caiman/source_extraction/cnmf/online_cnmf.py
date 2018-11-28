@@ -272,10 +272,9 @@ class OnACID(object):
         self.update_buffers(frame, t)
 
         t_new = time()
-
         num_added = self.find_new_components(Ab_, expected_comps, gHalf, mbs, nb_, t)
-
         self.t_detect.append(time() - t_new)
+
         if self.params.get('online', 'batch_update_suff_stat'):
         # faster update using minibatch of frames
             min_batch = min(self.params.get('online', 'update_freq'), mbs)
@@ -315,6 +314,12 @@ class OnACID(object):
 
         # update shapes
         t_sh = time()
+        self.revise_shapes(Ab_, mbs, nb_, num_added, t, t_start)
+        self.t_shapes.append(time() - t_sh)
+
+        return self
+
+    def revise_shapes(self, Ab_, mbs, nb_, num_added, t, t_start):
         if not self.params.get('online', 'dist_shape_update'):  # bulk shape update
             if ((t + 1 - self.params.get('online', 'init_batch')) %
                     self.params.get('online', 'update_freq') == 0):
@@ -364,32 +369,34 @@ class OnACID(object):
                     self.estimates.noisyC = np.delete(self.estimates.noisyC, ind_zero, axis=0)
                     for ii in ind_zero:
                         del self.estimates.OASISinstances[ii - self.params.get('init', 'nb')]
-                        #del self.ind_A[ii-self.params.init['nb']]
+                        # del self.ind_A[ii-self.params.init['nb']]
 
                     self.estimates.C_on = np.delete(self.estimates.C_on, ind_zero, axis=0)
                     self.estimates.AtY_buf = np.delete(self.estimates.AtY_buf, ind_zero, axis=0)
-                    #Ab_ = Ab_[:,ind_keep]
+                    # Ab_ = Ab_[:,ind_keep]
                     Ab_ = csc_matrix(Ab_[:, ind_keep])
-                    #Ab_ = csc_matrix(self.estimates.Ab_dense[:,:self.M])
+                    # Ab_ = csc_matrix(self.estimates.Ab_dense[:,:self.M])
                     self.Ab_copy = Ab_
                     self.estimates.Ab = Ab_
                     self.ind_A = list(
-                        [(self.estimates.Ab.indices[self.estimates.Ab.indptr[ii]:self.estimates.Ab.indptr[ii + 1]]) for ii in range(self.params.get('init', 'nb'), self.M)])
+                        [(self.estimates.Ab.indices[self.estimates.Ab.indptr[ii]:self.estimates.Ab.indptr[ii + 1]]) for
+                         ii in range(self.params.get('init', 'nb'), self.M)])
                     self.estimates.groups = list(map(list, update_order(Ab_)[0]))
 
                 if self.params.get('online', 'n_refit'):
                     self.estimates.AtY_buf = Ab_.T.dot(self.estimates.Yr_buf.T)
 
         else:  # distributed shape update
-            self.update_counter *= .5**(1. / self.params.get('online', 'update_freq'))
+            self.update_counter *= .5 ** (1. / self.params.get('online', 'update_freq'))
             # if not num_added:
-            if (not num_added) and (time() - t_start < 2*self.time_spend / (t - self.params.get('online', 'init_batch') + 1)):
+            if (not num_added) and (
+                    time() - t_start < 2 * self.time_spend / (t - self.params.get('online', 'init_batch') + 1)):
                 candidates = np.where(self.update_counter <= 1)[0]
                 if len(candidates):
                     indicator_components = candidates[:self.N // mbs + 1]
                     self.comp_upd.append(len(indicator_components))
                     self.update_counter[indicator_components] += 1
-                    #update_bkgrd = (t % self.params.get('online', 'update_freq') == 0)
+                    # update_bkgrd = (t % self.params.get('online', 'update_freq') == 0)
                     update_bkgrd = (t % mbs == 0)
                     if self.params.get('online', 'use_dense'):
                         # update dense Ab and sparse Ab simultaneously;
@@ -405,7 +412,7 @@ class OnACID(object):
                             indicator_components += nb_
                             self.estimates.AtA[indicator_components, indicator_components[:, None]] = \
                                 self.estimates.Ab_dense[:, indicator_components].T.dot(
-                                self.estimates.Ab_dense[:, indicator_components])
+                                    self.estimates.Ab_dense[:, indicator_components])
                     else:
                         Ab_, self.ind_A, _ = update_shapes(
                             self.estimates.CY, self.estimates.CC, Ab_, self.ind_A,
@@ -418,9 +425,6 @@ class OnACID(object):
             else:
                 self.comp_upd.append(0)
             self.time_spend += time() - t_start
-        self.t_shapes.append(time() - t_sh)
-
-        return self
 
     def find_new_components(self, Ab_, expected_comps, gHalf, mbs, nb_, t):
 
