@@ -232,6 +232,9 @@ class OnACID(object):
         self.loaded_model = loaded_model
         return self
 
+
+
+
     @profile
     def fit_next(self, t, frame_in, num_iters_hals=3):
         """
@@ -255,47 +258,23 @@ class OnACID(object):
         nb_ = self.params.get('init', 'nb')
         Ab_ = self.estimates.Ab
         mbs = self.params.get('online', 'minibatch_shape')
+        gHalf = np.array(self.params.get('init', 'gSiz')) // 2
+
         expected_comps = self.params.get('online', 'expected_comps')
         frame = frame_in.astype(np.float32)
-#        print(np.max(1/scipy.sparse.linalg.norm(self.estimates.Ab,axis = 0)))
-        self.estimates.Yr_buf.append(frame)
-        if len(self.estimates.ind_new) > 0:
-            self.estimates.mean_buff = self.estimates.Yres_buf.mean(0)
+
+
 
         # get noisy fluor value via NNLS (project data on shapes & demix)
-        self.regress_frame(frame, nb_, num_iters_hals, t)
-
+        self.regress_frame(frame, num_iters_hals, t)
 
         #self.estimates.mean_buff = self.estimates.Yres_buf.mean(0)
-        res_frame = frame - self.estimates.Ab.dot(self.estimates.C_on[:self.M, t])
-        mn_ = self.estimates.mn.copy()
-        # mean residual
-        self.estimates.mn = (t-1)/t*self.estimates.mn + res_frame/t
-        # variance of pixels residual
-        self.estimates.vr = (t-1)/t*self.estimates.vr + (res_frame - mn_)*(res_frame - self.estimates.mn)/t
-        # std of pixels residual
-        self.estimates.sn = np.sqrt(self.estimates.vr)
-        
+        self.update_buffers(frame, t)
+
         t_new = time()
+
         if self.params.get('online', 'update_num_comps'):
 
-            self.estimates.mean_buff += (res_frame-self.estimates.Yres_buf[self.estimates.Yres_buf.cur])/self.params.get('online', 'minibatch_shape')
-            self.estimates.Yres_buf.append(res_frame)
-
-            res_frame = np.reshape(res_frame, self.params.get('data', 'dims'), order='F')
-
-            rho = imblur(np.maximum(res_frame,0), sig=self.params.get('init', 'gSig'),
-                         siz=self.params.get('init', 'gSiz'), nDimBlur=len(self.params.get('data', 'dims')))**2
-
-            rho = np.reshape(rho, np.prod(self.params.get('data', 'dims')))
-            self.estimates.rho_buf.append(rho)
-
-###
-            gHalf = np.array(self.params.get('init', 'gSiz')) // 2
-            self.estimates.sv -= self.estimates.rho_buf.get_first()
-            # update variance of residual buffer
-            self.estimates.sv += self.estimates.rho_buf.get_last_frames(1).squeeze()
-            self.estimates.sv = np.maximum(self.estimates.sv, 0)
 
             Ains, Cins, Cins_res, inds, ijsig_all, self.cnn_pos, local_max = get_candidate_components(
                 self.estimates.sv, self.params.get('data', 'dims'), Yres_buf=self.estimates.Yres_buf, min_num_trial=self.params.get('online', 'min_num_trial'), gSig=self.params.get('init', 'gSig'),
@@ -315,8 +294,8 @@ class OnACID(object):
                 thresh_fitness_raw=self.params.get('online', 'thresh_fitness_raw'),
                 thresh_overlap=self.params.get('online', 'thresh_overlap'), groups=self.estimates.groups,
                 batch_update_suff_stat=self.params.get('online', 'batch_update_suff_stat'),
-                gnb=self.params.get('init', 'nb'), sn=self.estimates.sn, 
-                g=(np.mean(self.estimates.g) if self.params.get('preprocess', 'p') == 1 else 
+                gnb=self.params.get('init', 'nb'), sn=self.estimates.sn,
+                g=(np.mean(self.estimates.g) if self.params.get('preprocess', 'p') == 1 else
                     np.mean(self.estimates.g, 0)), s_min=self.params.get('temporal', 's_min'),
                 Ab_dense=self.estimates.Ab_dense if self.params.get('online', 'use_dense') else None,
                 oases=self.estimates.OASISinstances if self.params.get('preprocess', 'p') else None,
@@ -328,24 +307,9 @@ class OnACID(object):
                 self.N += num_added
                 self.M += num_added
                 if self.N + self.params.get('online', 'max_num_added') > expected_comps:
-                    expected_comps += 200
-                    self.params.set('online', {'expected_comps': expected_comps})
-                    self.estimates.CY.resize(
-                        [expected_comps + nb_, self.estimates.CY.shape[-1]])
-                    # refcheck can trigger "ValueError: cannot resize an array references or is referenced
-                    #                       by another array in this way.  Use the resize function"
-                    # np.resize didn't work, but refcheck=False seems fine
-                    self.estimates.C_on.resize(
-                        [expected_comps + nb_, self.estimates.C_on.shape[-1]], refcheck=False)
-                    self.estimates.noisyC.resize(
-                        [expected_comps + nb_, self.estimates.C_on.shape[-1]])
-                    if self.params.get('online', 'use_dense'):  # resize won't work due to contingency issue
-                        # self.estimates.Ab_dense.resize([self.estimates.CY.shape[-1], expected_comps+nb_])
-                        self.estimates.Ab_dense = np.zeros((self.estimates.CY.shape[-1], expected_comps + nb_),
-                                                 dtype=np.float32)
-                        self.estimates.Ab_dense[:, :Ab_.shape[1]] = Ab_.toarray()
-                    print('Increasing number of expected components to:' +
-                          str(expected_comps))
+                    raise Exception('Too Many components added')
+
+
                 self.update_counter.resize(self.N)
 
                 self.estimates.noisyC[self.M - num_added:self.M, t - mbs +
@@ -529,16 +493,67 @@ class OnACID(object):
 
         return self
 
-    def regress_frame(self, frame, nb_, num_iters_hals, t):
+    def regress_frame(self, frame, num_iters_hals, t):
+        ''' fit a frame with the known neurons
+        Args
+            t : int
+                time measured in number of frames
+
+            frame_in : array
+                flattened array of shape (x * y [ * z],) containing the t-th image.
+
+            num_iters_hals: int, optional
+                maximal number of iterations for HALS (NNLS via blockCD)
+        '''
+        nb_ = self.params.get('init', 'nb')
 
         self.estimates.C_on[:self.M, t], self.estimates.noisyC[:self.M, t] = HALS4activity(
-            frame, self.estimates.Ab, self.estimates.noisyC[:self.M, t-1].copy(), self.estimates.AtA, iters=num_iters_hals, groups=self.estimates.groups)
+            frame, self.estimates.Ab, self.estimates.noisyC[:self.M, t - 1].copy(), self.estimates.AtA,
+            iters=num_iters_hals, groups=self.estimates.groups)
         if self.params.get('preprocess', 'p'):
             # denoise & deconvolve
             for i, o in enumerate(self.estimates.OASISinstances):
                 o.fit_next(self.estimates.noisyC[nb_ + i, t])
                 self.estimates.C_on[nb_ + i, t - o.get_l_of_last_pool() +
                                              1: t + 1] = o.get_c_of_last_pool()
+
+    def update_buffers(self, frame, t):
+        '''
+        Update buffers
+        @param frame:
+        @param t:
+        @return:
+        '''
+        res_frame = frame - self.estimates.Ab.dot(self.estimates.C_on[:self.M, t])
+        self.estimates.Yr_buf.append(frame)
+        if len(self.estimates.ind_new) > 0:
+            self.estimates.mean_buff = self.estimates.Yres_buf.mean(0)
+        mn_ = self.estimates.mn.copy()
+        # mean residual
+        self.estimates.mn = (t - 1) / t * self.estimates.mn + res_frame / t
+        # variance of pixels residual
+        self.estimates.vr = (t - 1) / t * self.estimates.vr + (res_frame - mn_) * (res_frame - self.estimates.mn) / t
+        # std of pixels residual
+        self.estimates.sn = np.sqrt(self.estimates.vr)
+        if self.params.get('online', 'update_num_comps'):
+            self.estimates.mean_buff += (res_frame - self.estimates.Yres_buf[
+                self.estimates.Yres_buf.cur]) / self.params.get('online', 'minibatch_shape')
+            self.estimates.Yres_buf.append(res_frame)
+
+            res_frame = np.reshape(res_frame, self.params.get('data', 'dims'), order='F')
+
+            rho = imblur(np.maximum(res_frame, 0), sig=self.params.get('init', 'gSig'),
+                         siz=self.params.get('init', 'gSiz'), nDimBlur=len(self.params.get('data', 'dims'))) ** 2
+
+            rho = np.reshape(rho, np.prod(self.params.get('data', 'dims')))
+            self.estimates.rho_buf.append(rho)
+
+            ###
+
+            self.estimates.sv -= self.estimates.rho_buf.get_first()
+            # update variance of residual buffer
+            self.estimates.sv += self.estimates.rho_buf.get_last_frames(1).squeeze()
+            self.estimates.sv = np.maximum(self.estimates.sv, 0)
 
     def initialize_online(self):
         fls = self.params.get('data', 'fnames')
