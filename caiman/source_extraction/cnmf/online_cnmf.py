@@ -275,51 +275,18 @@ class OnACID(object):
         num_added = self.find_new_components(Ab_, expected_comps, gHalf, mbs, nb_, t)
         self.t_detect.append(time() - t_new)
 
-        if self.params.get('online', 'batch_update_suff_stat'):
-        # faster update using minibatch of frames
-            min_batch = min(self.params.get('online', 'update_freq'), mbs)
-            if ((t + 1 - self.params.get('online', 'init_batch')) % min_batch == 0):
-
-                ccf = self.estimates.C_on[:self.M, t - min_batch + 1:t + 1]
-                y = self.estimates.Yr_buf.get_last_frames(min_batch)
-                # ccf = self.estimates.C_on[:self.M, t - mbs + 1:t + 1]
-                # y = self.estimates.Yr_buf #.get_last_frames(mbs)
-
-                # much faster: exploit that we only access CY[m, ind_pixels], hence update only these
-                n0 = min_batch
-                t0 = 0 * self.params.get('online', 'init_batch')
-                w1 = (t - n0 + t0) * 1. / (t + t0)  # (1 - 1./t)#mbs*1. / t
-                w2 = 1. / (t + t0)  # 1.*mbs /t
-                for m in range(self.N):
-                    self.estimates.CY[m + nb_, self.ind_A[m]] *= w1
-                    self.estimates.CY[m + nb_, self.ind_A[m]] += w2 * \
-                        ccf[m + nb_].dot(y[:, self.ind_A[m]])
-
-                self.estimates.CY[:nb_] = self.estimates.CY[:nb_] * w1 + \
-                    w2 * ccf[:nb_].dot(y)   # background
-                self.estimates.CC = self.estimates.CC * w1 + w2 * ccf.dot(ccf.T)
-
-        else:
-
-            ccf = self.estimates.C_on[:self.M, t - self.params.get('online', 'minibatch_suff_stat'):t -
-                                      self.params.get('online', 'minibatch_suff_stat') + 1]
-            y = self.estimates.Yr_buf.get_last_frames(self.params.get('online', 'minibatch_suff_stat') + 1)[:1]
-            # much faster: exploit that we only access CY[m, ind_pixels], hence update only these
-            for m in range(self.N):
-                self.estimates.CY[m + nb_, self.ind_A[m]] *= (1 - 1. / t)
-                self.estimates.CY[m + nb_, self.ind_A[m]] += ccf[m +
-                                                       nb_].dot(y[:, self.ind_A[m]]) / t
-            self.estimates.CY[:nb_] = self.estimates.CY[:nb_] * (1 - 1. / t) + ccf[:nb_].dot(y / t)
-            self.estimates.CC = self.estimates.CC * (1 - 1. / t) + ccf.dot(ccf.T / t)
+        self.update_suff_stats(t)
 
         # update shapes
-        t_sh = time()
-        self.revise_shapes(Ab_, mbs, nb_, num_added, t, t_start)
-        self.t_shapes.append(time() - t_sh)
+        self.update_shape_components(Ab_, num_added, t, t_start)
 
         return self
 
-    def revise_shapes(self, Ab_, mbs, nb_, num_added, t, t_start):
+    def update_shape_components(self, Ab_, num_added, t, t_start):
+        mbs = self.params.get('online', 'minibatch_shape')
+        nb_ = self.params.get('init', 'nb')
+        t_sh = time()
+
         if not self.params.get('online', 'dist_shape_update'):  # bulk shape update
             if ((t + 1 - self.params.get('online', 'init_batch')) %
                     self.params.get('online', 'update_freq') == 0):
@@ -423,7 +390,10 @@ class OnACID(object):
                 self.estimates.Ab = Ab_
             else:
                 self.comp_upd.append(0)
+
             self.time_spend += time() - t_start
+        self.t_shapes.append(time() - t_sh)
+        return self
 
     def find_new_components(self, Ab_, expected_comps, gHalf, mbs, nb_, t):
 
@@ -479,6 +449,55 @@ class OnACID(object):
                 idx_overlap = self.estimates.AtA[nb_:-num_added, -num_added:].nonzero()[0]
                 self.update_counter[idx_overlap] = 0
         return num_added
+
+    def update_suff_stats(self, t):
+        ''' update the sufficient statistics CC and CY
+
+        Args
+            t: int time
+
+        '''
+        mbs = self.params.get('online', 'minibatch_shape')
+        nb_ = self.params.get('init', 'nb')
+
+        if self.params.get('online', 'batch_update_suff_stat'):
+            # faster update using minibatch of frames
+            min_batch = min(self.params.get('online', 'update_freq'), mbs)
+            if ((t + 1 - self.params.get('online', 'init_batch')) % min_batch == 0):
+
+                ccf = self.estimates.C_on[:self.M, t - min_batch + 1:t + 1]
+                y = self.estimates.Yr_buf.get_last_frames(min_batch)
+                # ccf = self.estimates.C_on[:self.M, t - mbs + 1:t + 1]
+                # y = self.estimates.Yr_buf #.get_last_frames(mbs)
+
+                # much faster: exploit that we only access CY[m, ind_pixels], hence update only these
+                n0 = min_batch
+                t0 = 0 * self.params.get('online', 'init_batch')
+                w1 = (t - n0 + t0) * 1. / (t + t0)  # (1 - 1./t)#mbs*1. / t
+                w2 = 1. / (t + t0)  # 1.*mbs /t
+                for m in range(self.N):
+                    self.estimates.CY[m + nb_, self.ind_A[m]] *= w1
+                    self.estimates.CY[m + nb_, self.ind_A[m]] += w2 * \
+                                                                 ccf[m + nb_].dot(y[:, self.ind_A[m]])
+
+                self.estimates.CY[:nb_] = self.estimates.CY[:nb_] * w1 + \
+                                          w2 * ccf[:nb_].dot(y)  # background
+                self.estimates.CC = self.estimates.CC * w1 + w2 * ccf.dot(ccf.T)
+
+        else:
+
+            ccf = self.estimates.C_on[:self.M, t - self.params.get('online', 'minibatch_suff_stat'):t -
+                                                                                                    self.params.get(
+                                                                                                        'online',
+                                                                                                        'minibatch_suff_stat') + 1]
+            y = self.estimates.Yr_buf.get_last_frames(self.params.get('online', 'minibatch_suff_stat') + 1)[:1]
+            # much faster: exploit that we only access CY[m, ind_pixels], hence update only these
+            for m in range(self.N):
+                self.estimates.CY[m + nb_, self.ind_A[m]] *= (1 - 1. / t)
+                self.estimates.CY[m + nb_, self.ind_A[m]] += ccf[m +
+                                                                 nb_].dot(y[:, self.ind_A[m]]) / t
+            self.estimates.CY[:nb_] = self.estimates.CY[:nb_] * (1 - 1. / t) + ccf[:nb_].dot(y / t)
+            self.estimates.CC = self.estimates.CC * (1 - 1. / t) + ccf.dot(ccf.T / t)
 
     def regress_frame(self, frame, num_iters_hals, t):
         ''' fit a frame with the known neurons
