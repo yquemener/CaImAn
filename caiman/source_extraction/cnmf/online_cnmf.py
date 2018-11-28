@@ -305,8 +305,7 @@ class OnACID(object):
 
             (self.estimates.Ab, Cf_temp, self.estimates.Yres_buf, self.estimates.rho_buf,
                 self.estimates.CC, self.estimates.CY, self.ind_A, self.estimates.sv,
-                self.estimates.groups, self.estimates.ind_new, self.ind_new_all,
-                self.estimates.sv) = update_num_components(
+                self.estimates.groups, self.estimates.ind_new, self.ind_new_all) = update_num_components(
                 self.estimates.sv, self.estimates.Ab, self.estimates.C_on[:self.M, (t - mbs + 1):(t + 1)],
                 self.estimates.Yres_buf, self.estimates.Yr_buf, self.estimates.rho_buf,
                 self.params.get('data', 'dims'), self.params.get('init', 'gSig'),
@@ -1718,7 +1717,7 @@ def update_num_components(sv, Ab, Cf, Yres_buf, Y_buf, rho_buf,
 #    plt.cla()
 #    plt.imshow(Yres_buf.mean(0).reshape(dims, order = 'F'))
 #    plt.pause(.05)
-    return Ab, Cf, Yres_buf, rho_buf, CC, CY, ind_A, sv, groups, ind_new, ind_new_all, sv
+    return Ab, Cf, Yres_buf, rho_buf, CC, CY, ind_A, sv, groups, ind_new, ind_new_all
 
 
 #%% remove components online
