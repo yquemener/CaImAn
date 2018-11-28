@@ -273,80 +273,8 @@ class OnACID(object):
 
         t_new = time()
 
-        if self.params.get('online', 'update_num_comps'):
+        num_added = self.find_new_components(Ab_, expected_comps, gHalf, mbs, nb_, t)
 
-
-            Ains, Cins, Cins_res, inds, ijsig_all, self.cnn_pos, local_max = get_candidate_components(
-                self.estimates.sv, self.params.get('data', 'dims'), Yres_buf=self.estimates.Yres_buf, min_num_trial=self.params.get('online', 'min_num_trial'), gSig=self.params.get('init', 'gSig'),
-                gHalf=gHalf, sniper_mode=self.params.get('online', 'sniper_mode'), rval_thr=self.params.get('online', 'rval_thr'), patch_size=50,
-                loaded_model=self.loaded_model, thresh_CNN_noisy=self.params.get('online', 'thresh_CNN_noisy'),
-                use_peak_max=self.params.get('online', 'use_peak_max'), test_both=self.params.get('online', 'test_both'), mean_buff=self.estimates.mean_buff)
-
-            (self.estimates.Ab, Cf_temp, self.estimates.Yres_buf, self.estimates.rho_buf,
-                self.estimates.CC, self.estimates.CY, self.ind_A, self.estimates.sv,
-                self.estimates.groups, self.estimates.ind_new, self.ind_new_all) = update_num_components(
-                t, self.estimates.sv, self.estimates.Ab, self.estimates.C_on[:self.M, (t - mbs + 1):(t + 1)],
-                self.estimates.Yres_buf, self.estimates.Yr_buf, self.estimates.rho_buf,
-                self.params.get('data', 'dims'), self.params.get('init', 'gSig'),
-                self.params.get('init', 'gSiz'), self.ind_A, self.estimates.CY, self.estimates.CC,
-                Ains, Cins, Cins_res, inds, ijsig_all, gHalf=gHalf,
-                rval_thr=self.params.get('online', 'rval_thr'),
-                thresh_fitness_delta=self.params.get('online', 'thresh_fitness_delta'),
-                thresh_fitness_raw=self.params.get('online', 'thresh_fitness_raw'),
-                thresh_overlap=self.params.get('online', 'thresh_overlap'), groups=self.estimates.groups,
-                batch_update_suff_stat=self.params.get('online', 'batch_update_suff_stat'),
-                gnb=self.params.get('init', 'nb'), sn=self.estimates.sn,
-                g=(np.mean(self.estimates.g) if self.params.get('preprocess', 'p') == 1 else
-                    np.mean(self.estimates.g, 0)), s_min=self.params.get('temporal', 's_min'),
-                Ab_dense=self.estimates.Ab_dense if self.params.get('online', 'use_dense') else None,
-                oases=self.estimates.OASISinstances if self.params.get('preprocess', 'p') else None,
-                N_samples_exceptionality=self.params.get('online', 'N_samples_exceptionality'))
-
-            num_added = len(self.ind_A) - self.N
-
-            if num_added > 0:
-                self.N += num_added
-                self.M += num_added
-                if self.N + self.params.get('online', 'max_num_added') > expected_comps:
-                    raise Exception('Too Many components added')
-
-
-                self.update_counter.resize(self.N)
-
-                self.estimates.noisyC[self.M - num_added:self.M, t - mbs +
-                            1:t + 1] = Cf_temp[self.M - num_added:self.M]
-
-                for _ct in range(self.M - num_added, self.M):
-                    self.time_neuron_added.append((_ct - nb_, t))
-                    if self.params.get('preprocess', 'p'):
-                        # N.B. OASISinstances are already updated within update_num_components
-                        self.estimates.C_on[_ct, t - mbs + 1: t +
-                                  1] = self.estimates.OASISinstances[_ct - nb_].get_c(mbs)
-                    else:
-                        self.estimates.C_on[_ct, t - mbs + 1: t + 1] = np.maximum(0,
-                                                                        self.estimates.noisyC[_ct, t - mbs + 1: t + 1])
-                    if self.params.get('online', 'simultaneously') and self.params.get('online', 'n_refit'):
-                        self.estimates.AtY_buf = np.concatenate((
-                            self.estimates.AtY_buf, [Ab_.data[Ab_.indptr[_ct]:Ab_.indptr[_ct + 1]].dot(
-                                self.estimates.Yr_buf.T[Ab_.indices[Ab_.indptr[_ct]:Ab_.indptr[_ct + 1]]])]))
-                    # N.B. Ab_dense is already updated within update_num_components as side effect
-
-                # self.estimates.AtA = (Ab_.T.dot(Ab_)).toarray()
-                # faster incremental update of AtA instead of above line:
-                AtA = self.estimates.AtA
-                self.estimates.AtA = np.zeros((self.M, self.M), dtype=np.float32)
-                self.estimates.AtA[:-num_added, :-num_added] = AtA
-                if self.params.get('online', 'use_dense'):
-                    self.estimates.AtA[:, -num_added:] = self.estimates.Ab.T.dot(
-                        self.estimates.Ab_dense[:, self.M - num_added:self.M])
-                else:
-                    self.estimates.AtA[:, -num_added:] = self.estimates.Ab.T.dot(
-                        self.estimates.Ab[:, -num_added:]).toarray()
-                self.estimates.AtA[-num_added:] = self.estimates.AtA[:, -num_added:].T
-                
-                # set the update counter to 0 for components that are overlaping the newly added
-                idx_overlap = self.estimates.AtA[nb_:-num_added, -num_added:].nonzero()[0]
-                self.update_counter[idx_overlap] = 0
         self.t_detect.append(time() - t_new)
         if self.params.get('online', 'batch_update_suff_stat'):
         # faster update using minibatch of frames
@@ -493,6 +421,85 @@ class OnACID(object):
         self.t_shapes.append(time() - t_sh)
 
         return self
+
+    def find_new_components(self, Ab_, expected_comps, gHalf, mbs, nb_, t):
+        if self.params.get('online', 'update_num_comps'):
+
+            Ains, Cins, Cins_res, inds, ijsig_all, self.cnn_pos, local_max = get_candidate_components(
+                self.estimates.sv, self.params.get('data', 'dims'), Yres_buf=self.estimates.Yres_buf,
+                min_num_trial=self.params.get('online', 'min_num_trial'), gSig=self.params.get('init', 'gSig'),
+                gHalf=gHalf, sniper_mode=self.params.get('online', 'sniper_mode'),
+                rval_thr=self.params.get('online', 'rval_thr'), patch_size=50,
+                loaded_model=self.loaded_model, thresh_CNN_noisy=self.params.get('online', 'thresh_CNN_noisy'),
+                use_peak_max=self.params.get('online', 'use_peak_max'),
+                test_both=self.params.get('online', 'test_both'), mean_buff=self.estimates.mean_buff)
+
+            (self.estimates.Ab, Cf_temp, self.estimates.Yres_buf, self.estimates.rho_buf,
+             self.estimates.CC, self.estimates.CY, self.ind_A, self.estimates.sv,
+             self.estimates.groups, self.estimates.ind_new, self.ind_new_all) = update_num_components(
+                t, self.estimates.sv, self.estimates.Ab, self.estimates.C_on[:self.M, (t - mbs + 1):(t + 1)],
+                self.estimates.Yres_buf, self.estimates.Yr_buf, self.estimates.rho_buf,
+                self.params.get('data', 'dims'), self.params.get('init', 'gSig'),
+                self.params.get('init', 'gSiz'), self.ind_A, self.estimates.CY, self.estimates.CC,
+                Ains, Cins, Cins_res, inds, ijsig_all, gHalf=gHalf,
+                rval_thr=self.params.get('online', 'rval_thr'),
+                thresh_fitness_delta=self.params.get('online', 'thresh_fitness_delta'),
+                thresh_fitness_raw=self.params.get('online', 'thresh_fitness_raw'),
+                thresh_overlap=self.params.get('online', 'thresh_overlap'), groups=self.estimates.groups,
+                batch_update_suff_stat=self.params.get('online', 'batch_update_suff_stat'),
+                gnb=self.params.get('init', 'nb'), sn=self.estimates.sn,
+                g=(np.mean(self.estimates.g) if self.params.get('preprocess', 'p') == 1 else
+                   np.mean(self.estimates.g, 0)), s_min=self.params.get('temporal', 's_min'),
+                Ab_dense=self.estimates.Ab_dense if self.params.get('online', 'use_dense') else None,
+                oases=self.estimates.OASISinstances if self.params.get('preprocess', 'p') else None,
+                N_samples_exceptionality=self.params.get('online', 'N_samples_exceptionality'))
+
+            num_added = len(self.ind_A) - self.N
+
+            if num_added > 0:
+                self.N += num_added
+                self.M += num_added
+                if self.N + self.params.get('online', 'max_num_added') > expected_comps:
+                    raise Exception('Too Many components added')
+
+                self.update_counter.resize(self.N)
+
+                self.estimates.noisyC[self.M - num_added:self.M, t - mbs +
+                                                                 1:t + 1] = Cf_temp[self.M - num_added:self.M]
+
+                for _ct in range(self.M - num_added, self.M):
+                    self.time_neuron_added.append((_ct - nb_, t))
+                    if self.params.get('preprocess', 'p'):
+                        # N.B. OASISinstances are already updated within update_num_components
+                        self.estimates.C_on[_ct, t - mbs + 1: t +
+                                                              1] = self.estimates.OASISinstances[_ct - nb_].get_c(mbs)
+                    else:
+                        self.estimates.C_on[_ct, t - mbs + 1: t + 1] = np.maximum(0,
+                                                                                  self.estimates.noisyC[_ct,
+                                                                                  t - mbs + 1: t + 1])
+                    if self.params.get('online', 'simultaneously') and self.params.get('online', 'n_refit'):
+                        self.estimates.AtY_buf = np.concatenate((
+                            self.estimates.AtY_buf, [Ab_.data[Ab_.indptr[_ct]:Ab_.indptr[_ct + 1]].dot(
+                                self.estimates.Yr_buf.T[Ab_.indices[Ab_.indptr[_ct]:Ab_.indptr[_ct + 1]]])]))
+                    # N.B. Ab_dense is already updated within update_num_components as side effect
+
+                # self.estimates.AtA = (Ab_.T.dot(Ab_)).toarray()
+                # faster incremental update of AtA instead of above line:
+                AtA = self.estimates.AtA
+                self.estimates.AtA = np.zeros((self.M, self.M), dtype=np.float32)
+                self.estimates.AtA[:-num_added, :-num_added] = AtA
+                if self.params.get('online', 'use_dense'):
+                    self.estimates.AtA[:, -num_added:] = self.estimates.Ab.T.dot(
+                        self.estimates.Ab_dense[:, self.M - num_added:self.M])
+                else:
+                    self.estimates.AtA[:, -num_added:] = self.estimates.Ab.T.dot(
+                        self.estimates.Ab[:, -num_added:]).toarray()
+                self.estimates.AtA[-num_added:] = self.estimates.AtA[:, -num_added:].T
+
+                # set the update counter to 0 for components that are overlaping the newly added
+                idx_overlap = self.estimates.AtA[nb_:-num_added, -num_added:].nonzero()[0]
+                self.update_counter[idx_overlap] = 0
+        return num_added
 
     def regress_frame(self, frame, num_iters_hals, t):
         ''' fit a frame with the known neurons
