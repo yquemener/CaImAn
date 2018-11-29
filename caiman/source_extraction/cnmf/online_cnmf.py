@@ -233,8 +233,6 @@ class OnACID(object):
         return self
 
 
-
-
     @profile
     def fit_next(self, t, frame_in, num_iters_hals=3):
         """
@@ -253,38 +251,28 @@ class OnACID(object):
         """
 
         t_start = time()
-
-        # locally scoped variables for brevity of code and faster look up
-        nb_ = self.params.get('init', 'nb')
-        Ab_ = self.estimates.Ab
-        mbs = self.params.get('online', 'minibatch_shape')
-        gHalf = np.array(self.params.get('init', 'gSiz')) // 2
-
-        expected_comps = self.params.get('online', 'expected_comps')
+        
         frame = frame_in.astype(np.float32)
-
-
 
         # get noisy fluor value via NNLS (project data on shapes & demix)
         self.regress_frame(frame, num_iters_hals, t)
-
+        
         #self.estimates.mean_buff = self.estimates.Yres_buf.mean(0)
         self.update_buffers(frame, t)
 
-        t_new = time()
-        num_added = self.find_new_components(Ab_, expected_comps, gHalf, mbs, nb_, t)
-        self.t_detect.append(time() - t_new)
+        num_added = self.find_new_components(t)
 
         self.update_suff_stats(t)
 
         # update shapes
-        self.update_shape_components(Ab_, num_added, t, t_start)
+        self.update_shape_components(num_added, t, t_start)
 
         return self
 
-    def update_shape_components(self, Ab_, num_added, t, t_start):
+    def update_shape_components(self, num_added, t, t_start):
         mbs = self.params.get('online', 'minibatch_shape')
         nb_ = self.params.get('init', 'nb')
+        Ab_ = self.estimates.Ab
         t_sh = time()
 
         if not self.params.get('online', 'dist_shape_update'):  # bulk shape update
@@ -392,10 +380,18 @@ class OnACID(object):
                 self.comp_upd.append(0)
 
             self.time_spend += time() - t_start
+
         self.t_shapes.append(time() - t_sh)
         return self
 
-    def find_new_components(self, Ab_, expected_comps, gHalf, mbs, nb_, t):
+    def find_new_components(self, t):
+        t_new = time()
+        nb_ = self.params.get('init', 'nb')
+        Ab_ = self.estimates.Ab
+        mbs = self.params.get('online', 'minibatch_shape')
+        gHalf = np.array(self.params.get('init', 'gSiz')) // 2
+
+        expected_comps = self.params.get('online', 'expected_comps')
 
         if self.params.get('online', 'update_num_comps'):
 
@@ -448,6 +444,7 @@ class OnACID(object):
                 # set the update counter to 0 for components that are overlaping the newly added
                 idx_overlap = self.estimates.AtA[nb_:-num_added, -num_added:].nonzero()[0]
                 self.update_counter[idx_overlap] = 0
+        self.t_detect.append(time() - t_new)
         return num_added
 
     def update_suff_stats(self, t):
