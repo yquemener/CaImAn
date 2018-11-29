@@ -670,12 +670,13 @@ def slider_change(change):
     idx_components_keep = context.cnm.estimates.idx_components
     A_ = A[:, idx_components_keep]
     C_ = C[idx_components_keep, :]
+    conv_ = conv[idx_components_keep, :]
     contours_ = [contours[i] for i in idx_components_keep]
 
     contour_mark.x,contour_mark.y = get_contour_coords(change-1, contours_, dims)
     roi_image_mark.image = widgets.Image(value=get_roi_image(A_,(change-1),dims))
     deconv = True if conv is not None else False
-    new_signal = get_signal(C_, change-1, conv)
+    new_signal = get_signal(C_, change-1, conv_)
     signal_mark.y = new_signal[0]
     new_signal_max = new_signal[0].max()
     if new_signal[1] is not None:
