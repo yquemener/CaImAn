@@ -31,6 +31,8 @@ from scipy.stats import norm
 from sklearn.decomposition import NMF
 from sklearn.preprocessing import normalize
 
+from multiprocessing import Process, Queue
+
 import caiman
 #  from caiman.source_extraction.cnmf import params
 from .cnmf import CNMF
@@ -234,7 +236,7 @@ class OnACID(object):
 
 
     @profile
-    def fit_next(self, t, frame_in, num_iters_hals=3):
+    def fit_next(self, q, t, frame_in, num_iters_hals=3):
         """
         This method fits the next frame using the online cnmf algorithm and
         updates the object.
@@ -252,22 +254,98 @@ class OnACID(object):
 
         t_start = time()
         
-        frame = frame_in.astype(np.float32)
+        frame = frame_in.astype(np.float32, copy=False)
+#        lastframe = self.estimates.Yr_buf.get_last_frames(1).T.squeeze() #get last added? cur -1 ?
 
-        # get noisy fluor value via NNLS (project data on shapes & demix)
-        self.regress_frame(frame, num_iters_hals, t)
+        t0 = time()
+ 
+        #self.regress_frame(frame, num_iters_hals, t)
         
-        #self.estimates.mean_buff = self.estimates.Yres_buf.mean(0)
-        self.update_buffers(frame, t)
+        AtY = self.estimates.Ab.T.dot(frame)
+        M_rf = self.M
+        nb_ = self.params.get('init', 'nb')
+        Yrescur = self.estimates.Yres_buf[self.estimates.Yres_buf.cur]
+        Yresmean = self.estimates.Yres_buf.mean(0)
 
-        num_added = self.find_new_components(t)
+        p = Process(target=regress_ext, args=(q, frame, num_iters_hals, t, nb_, M_rf, AtY, self.estimates.AtA, self.estimates.noisyC[:self.M, t - 1], self.estimates.groups, self.estimates.OASISinstances,
+                self.estimates.Ab, self.estimates.ind_new, Yresmean, self.estimates.mn, self.estimates.vr, self.params, Yrescur, self.estimates.mean_buff))        
+        p.start()
 
-        self.update_suff_stats(t)
+        num_added = self.find_new_components(t-1)
+        self.update_suff_stats(t-1)
+        self.update_shape_components(num_added, t-1, t_start)
 
-        # update shapes
-        self.update_shape_components(num_added, t, t_start)
+
+        (self.estimates.C_on[:M_rf, t], self.estimates.noisyC[:M_rf, t], res_frame, self.estimates.mn, 
+            self.estimates.vr, self.estimates.sn, self.estimates.mean_buff, rho) = q.get()
+        p.join()
+
+        self.update_buffers_local(frame, t, res_frame, rho)
 
         return self
+
+    def update_buffers_local(self, frame, t, res_frame, rho):
+        self.estimates.Yr_buf.append(frame)
+        self.estimates.Yres_buf.append(res_frame)
+        self.estimates.rho_buf.append(rho)
+        self.estimates.sv -= self.estimates.rho_buf.get_first()
+        self.estimates.sv += self.estimates.rho_buf.get_last_frames(1).squeeze()
+        self.estimates.sv = np.maximum(self.estimates.sv, 0)
+
+    def update_buffers(self, frame, t):
+        '''
+        Update buffers
+        @param frame:
+        @param t:
+        @return:
+        '''
+        res_frame = frame - self.estimates.Ab.dot(self.estimates.C_on[:self.M, t])
+        self.estimates.Yr_buf.append(frame)
+        if len(self.estimates.ind_new) > 0:
+            self.estimates.mean_buff = self.estimates.Yres_buf.mean(0)
+        mn_ = self.estimates.mn.copy()
+        # mean residual
+        self.estimates.mn = (t - 1) / t * self.estimates.mn + res_frame / t
+        # variance of pixels residual
+        self.estimates.vr = (t - 1) / t * self.estimates.vr + (res_frame - mn_) * (res_frame - self.estimates.mn) / t
+        # std of pixels residual
+        self.estimates.sn = np.sqrt(self.estimates.vr)
+        if self.params.get('online', 'update_num_comps'):
+            self.estimates.mean_buff += (res_frame - self.estimates.Yres_buf[
+                self.estimates.Yres_buf.cur]) / self.params.get('online', 'minibatch_shape')
+            self.estimates.Yres_buf.append(res_frame)
+
+            res_frame = np.reshape(res_frame, self.params.get('data', 'dims'), order='F')
+
+            rho = imblur(np.maximum(res_frame, 0), sig=self.params.get('init', 'gSig'),
+                         siz=self.params.get('init', 'gSiz'), nDimBlur=len(self.params.get('data', 'dims'))) ** 2
+
+            rho = np.reshape(rho, np.prod(self.params.get('data', 'dims')))
+            self.estimates.rho_buf.append(rho)
+
+            ###
+
+            self.estimates.sv -= self.estimates.rho_buf.get_first()
+            # update variance of residual buffer
+            self.estimates.sv += self.estimates.rho_buf.get_last_frames(1).squeeze()
+            self.estimates.sv = np.maximum(self.estimates.sv, 0)
+
+    def regress_frame(self, frame, num_iters_hals, t):
+        ''' fit a frame with the known neurons
+        Args
+            t : int
+                time measured in number of frames
+            frame_in : array
+                flattened array of shape (x * y [ * z],) containing the t-th image.
+            num_iters_hals: int, optional
+                maximal number of iterations for HALS (NNLS via blockCD)
+        '''
+        #nb_ = self.params.get('init', 'nb')
+
+        self.estimates.C_on[:self.M, t], self.estimates.noisyC[:self.M, t] = HALS4activity(
+            frame, self.estimates.Ab, self.estimates.noisyC[:self.M, t - 1].copy(), self.estimates.AtA,
+            iters=num_iters_hals, groups=self.estimates.groups)
+
 
     def update_shape_components(self, num_added, t, t_start):
         mbs = self.params.get('online', 'minibatch_shape')
@@ -395,7 +473,7 @@ class OnACID(object):
 
         if self.params.get('online', 'update_num_comps'):
 
-            Ains, Cins, Cins_res, inds, ijsig_all = self.get_candidate_components(gHalf)
+            Ains, Cins, Cins_res, inds = self.get_candidate_components(gHalf)
 
             Cf_temp = self.update_num_components(t, mbs, Ains, Cins, Cins_res, inds, gHalf)
 
@@ -495,68 +573,6 @@ class OnACID(object):
                                                                  nb_].dot(y[:, self.ind_A[m]]) / t
             self.estimates.CY[:nb_] = self.estimates.CY[:nb_] * (1 - 1. / t) + ccf[:nb_].dot(y / t)
             self.estimates.CC = self.estimates.CC * (1 - 1. / t) + ccf.dot(ccf.T / t)
-
-    def regress_frame(self, frame, num_iters_hals, t):
-        ''' fit a frame with the known neurons
-        Args
-            t : int
-                time measured in number of frames
-
-            frame_in : array
-                flattened array of shape (x * y [ * z],) containing the t-th image.
-
-            num_iters_hals: int, optional
-                maximal number of iterations for HALS (NNLS via blockCD)
-        '''
-        nb_ = self.params.get('init', 'nb')
-
-        self.estimates.C_on[:self.M, t], self.estimates.noisyC[:self.M, t] = HALS4activity(
-            frame, self.estimates.Ab, self.estimates.noisyC[:self.M, t - 1].copy(), self.estimates.AtA,
-            iters=num_iters_hals, groups=self.estimates.groups)
-        if self.params.get('preprocess', 'p'):
-            # denoise & deconvolve
-            for i, o in enumerate(self.estimates.OASISinstances):
-                o.fit_next(self.estimates.noisyC[nb_ + i, t])
-                self.estimates.C_on[nb_ + i, t - o.get_l_of_last_pool() +
-                                             1: t + 1] = o.get_c_of_last_pool()
-
-    def update_buffers(self, frame, t):
-        '''
-        Update buffers
-        @param frame:
-        @param t:
-        @return:
-        '''
-        res_frame = frame - self.estimates.Ab.dot(self.estimates.C_on[:self.M, t])
-        self.estimates.Yr_buf.append(frame)
-        if len(self.estimates.ind_new) > 0:
-            self.estimates.mean_buff = self.estimates.Yres_buf.mean(0)
-        mn_ = self.estimates.mn.copy()
-        # mean residual
-        self.estimates.mn = (t - 1) / t * self.estimates.mn + res_frame / t
-        # variance of pixels residual
-        self.estimates.vr = (t - 1) / t * self.estimates.vr + (res_frame - mn_) * (res_frame - self.estimates.mn) / t
-        # std of pixels residual
-        self.estimates.sn = np.sqrt(self.estimates.vr)
-        if self.params.get('online', 'update_num_comps'):
-            self.estimates.mean_buff += (res_frame - self.estimates.Yres_buf[
-                self.estimates.Yres_buf.cur]) / self.params.get('online', 'minibatch_shape')
-            self.estimates.Yres_buf.append(res_frame)
-
-            res_frame = np.reshape(res_frame, self.params.get('data', 'dims'), order='F')
-
-            rho = imblur(np.maximum(res_frame, 0), sig=self.params.get('init', 'gSig'),
-                         siz=self.params.get('init', 'gSiz'), nDimBlur=len(self.params.get('data', 'dims'))) ** 2
-
-            rho = np.reshape(rho, np.prod(self.params.get('data', 'dims')))
-            self.estimates.rho_buf.append(rho)
-
-            ###
-
-            self.estimates.sv -= self.estimates.rho_buf.get_first()
-            # update variance of residual buffer
-            self.estimates.sv += self.estimates.rho_buf.get_last_frames(1).squeeze()
-            self.estimates.sv = np.maximum(self.estimates.sv, 0)
 
     def initialize_online(self):
         fls = self.params.get('data', 'fnames')
@@ -696,7 +712,7 @@ class OnACID(object):
         Returns:
             self (results of caiman online)
         """
-
+        q = Queue()
         fls = self.params.get('data', 'fnames')
         init_batch = self.params.get('online', 'init_batch')
         epochs = self.params.get('online', 'epochs')
@@ -776,7 +792,7 @@ class OnACID(object):
                     
                     if self.params.get('online', 'normalize'):
                         frame_cor = frame_cor/self.img_norm
-                    self.fit_next(t, frame_cor.reshape(-1, order='F'))
+                    self.fit_next(q, t, frame_cor.reshape(-1, order='F'))
                     if self.params.get('online', 'show_movie'):
                         self.t = t
                         vid_frame = self.create_frame(frame_cor)
@@ -1011,7 +1027,7 @@ class OnACID(object):
                 Cin.append(cin)
                 Cin_res.append(cin_res)
 
-        return Ain, Cin, Cin_res, idx, ijsig_all
+        return Ain, Cin, Cin_res, idx
 
 
     def update_num_components(self, t, mbs, Ains, Cins, Cins_res, inds, gHalf=(5,5),
@@ -1408,7 +1424,7 @@ def HALS4shapes(Yr, A, C, iters=2):
 
 # definitions for demixed time series extraction and denoising/deconvolving
 @profile
-def HALS4activity(Yr, A, noisyC, AtA=None, iters=5, tol=1e-3, groups=None,
+def HALS4activity(Yr, AtY, noisyC, AtA, iters=5, tol=1e-3, groups=None,
                   order=None):
     """Solves C = argmin_C ||Yr-AC|| using block-coordinate decent. Can use
     groups to update non-overlapping components in parallel or a specified
@@ -1447,12 +1463,12 @@ def HALS4activity(Yr, A, noisyC, AtA=None, iters=5, tol=1e-3, groups=None,
             solution of HALS + residuals, i.e, (C + YrA)
     """
 
-    AtY = A.T.dot(Yr)
+    #AtY = A.T.dot(Yr)
     num_iters = 0
     C_old = np.zeros_like(noisyC)
     C = noisyC.copy()
-    if AtA is None:
-        AtA = A.T.dot(A)
+    #if AtA is None:
+    #    AtA = A.T.dot(A)
     AtAd = AtA.diagonal() + np.finfo(np.float32).eps
 
     # faster than np.linalg.norm
@@ -1472,6 +1488,105 @@ def HALS4activity(Yr, A, noisyC, AtA=None, iters=5, tol=1e-3, groups=None,
         num_iters += 1
     return C, noisyC
 
+def regress_ext(q, frame, num_iters_hals, t, nb_, M, AtY, AtA, noisyC_t1, groups, OASISinstances,
+                Ab, ind_new, Yres_mean, mn, vr, params, Yrescur, mean_buff):
+    """
+    Runs code from regress_frame and update_buffers_ext for use in a separate process
+    Returns: C_on, noisyC, mn, vr, sn, sv, and updated Yr_buf, Yres_buf, mean_buf, rho_buf
+    """
+    #regress frame
+    C_on_t, noisyC_t = HALS4activity(frame, AtY, noisyC_t1, AtA, iters=num_iters_hals, groups=groups)
+
+    #compute updates for buffers
+    res_frame = frame - Ab.dot(C_on_t)
+    if len(ind_new) > 0:
+        mean_buff = Yres_mean
+    mn_ = mn.copy()
+    mn = (t - 1) / t * mn + res_frame / t
+    vr = (t - 1) / t * vr + (res_frame - mn_) * (res_frame - mn) / t
+    sn = np.sqrt(vr)
+    if params.get('online', 'update_num_comps'):
+        mean_buff += (res_frame - Yrescur) / params.get('online', 'minibatch_shape')
+        Yres_app = res_frame
+
+        res_frame = np.reshape(res_frame, params.get('data', 'dims'), order='F')
+
+        rho = imblur(np.maximum(res_frame, 0), sig=params.get('init', 'gSig'),
+                        siz=params.get('init', 'gSiz'), nDimBlur=len(params.get('data', 'dims'))) ** 2
+
+        rho = np.reshape(rho, np.prod(params.get('data', 'dims')))
+
+    q.put([C_on_t, noisyC_t, Yres_app, mn, vr, sn, mean_buff, rho])
+    #return 
+
+def regress_frame(q, frame, num_iters_hals, t, nb_, M, AtY, AtA, noisyC_t1, groups, OASISinstances):
+    ''' fit a frame with the known neurons
+    Args
+        t : int
+            time measured in number of frames
+
+        frame_in : array
+            flattened array of shape (x * y [ * z],) containing the t-th image.
+
+        num_iters_hals: int, optional
+            maximal number of iterations for HALS (NNLS via blockCD)
+
+        params, estimates.Ab, AtA, noisyC; groups, OASISinstances
+    '''
+
+    #TODO: likely faster to include HALS4Activity code here instead of calling outside fcn
+    C_on_t, noisyC_t = HALS4activity(frame, AtY, noisyC_t1, 
+                                AtA, iters=num_iters_hals, groups=groups)
+    #if params.get('preprocess', 'p'):
+        # denoise & deconvolve
+    #    for i, o in enumerate(OASISinstances):
+    #        o.fit_next(noisyC[nb_ + i, t])
+    #        C_on[nb_ + i, t - o.get_l_of_last_pool() +
+    #                                        1: t + 1] = o.get_c_of_last_pool()
+
+    q.put([C_on_t, noisyC_t])
+    return C_on_t, noisyC_t
+
+def update_buffers_ext(q, frame, t, Ab, C_on_t, ind_new, Yres_mean, mn, vr, params, Yrescur, mean_buff):
+    '''
+    return things with which to update buffers
+    @param frame:
+    @param t:
+    @return:
+    '''
+    res_frame = frame - Ab.dot(C_on_t)
+    #self.estimates.Yr_buf.append(frame)
+    if len(ind_new) > 0:
+        mean_buff = Yres_mean
+    mn_ = mn.copy()
+    # mean residual
+    mn = (t - 1) / t * mn + res_frame / t
+    # variance of pixels residual
+    vr = (t - 1) / t * vr + (res_frame - mn_) * (res_frame - mn) / t
+    # std of pixels residual
+    sn = np.sqrt(vr)
+    if params.get('online', 'update_num_comps'):
+        mean_buff += (res_frame - Yrescur) / params.get('online', 'minibatch_shape')
+        #self.estimates.Yres_buf.append(res_frame)
+        Yres_app = res_frame
+
+        res_frame = np.reshape(res_frame, params.get('data', 'dims'), order='F')
+
+        rho = imblur(np.maximum(res_frame, 0), sig=params.get('init', 'gSig'),
+                        siz=params.get('init', 'gSiz'), nDimBlur=len(params.get('data', 'dims'))) ** 2
+
+        rho = np.reshape(rho, np.prod(params.get('data', 'dims')))
+        #self.estimates.rho_buf.append(rho)
+
+        ###
+
+        #self.estimates.sv -= self.estimates.rho_buf.get_indexed(1)#.squeeze? #self.estimates.rho_buf.get_first()
+        # update variance of residual buffer
+        #self.estimates.sv += self.estimates.rho_buf.get_indexed(-1) #get_last_frames(1).squeeze()
+        #self.estimates.sv = np.maximum(self.estimates.sv, 0)
+
+    q.put([Yres_app, mn, vr, sn, mean_buff, rho])
+    return Yres_app, mn, vr, sn, mean_buff, rho
 
 @profile
 def demix_and_deconvolve(C, noisyC, AtY, AtA, OASISinstances, iters=3, n_refit=0):
@@ -1708,6 +1823,9 @@ class RingBuffer(np.ndarray):
 
     def get_first(self):
         return self[self.cur]
+
+    def get_indexed(self, i):
+        return self[self.cur+i]
 
     def get_last_frames(self, num_frames):
         if self.cur >= num_frames:
