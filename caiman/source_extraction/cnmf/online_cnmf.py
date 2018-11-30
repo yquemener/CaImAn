@@ -7,9 +7,9 @@ is storead in an Estimates class
 
 More info:
 ------------
-Giovannucci, A., Friedrich, J., Kaufman, M., Churchland, A., Chklovskii, D., 
+Giovannucci, A., Friedrich, J., Kaufman, M., Churchland, A., Chklovskii, D.,
 Paninski, L., & Pnevmatikakis, E.A. (2017). OnACID: Online analysis of calcium
-imaging data in real time. In Advances in Neural Information Processing Systems 
+imaging data in real time. In Advances in Neural Information Processing Systems
 (pp. 2381-2391).
 @url http://papers.nips.cc/paper/6832-onacid-online-analysis-of-calcium-imaging-data-in-real-time
 """
@@ -195,8 +195,10 @@ class OnACID(object):
         self.estimates.ind_new = []
         self.estimates.rho_buf = imblur(np.maximum(self.estimates.Yres_buf.T,0).reshape(
             self.params.get('data', 'dims') + (-1,), order='F'), sig=self.params.get('init', 'gSig'), siz=self.params.get('init', 'gSiz'), nDimBlur=len(self.params.get('data', 'dims')))**2
+
         self.estimates.rho_buf = np.reshape(
             self.estimates.rho_buf, (np.prod(self.params.get('data', 'dims')), -1)).T
+        self.estimates.rho_buf =  np.ascontiguousarray(self.estimates.rho_buf)
         self.estimates.rho_buf = RingBuffer(self.estimates.rho_buf, self.params.get('online', 'minibatch_shape'))
         self.estimates.AtA = (self.estimates.Ab.T.dot(self.estimates.Ab)).toarray()
         self.estimates.AtY_buf = self.estimates.Ab.T.dot(self.estimates.Yr_buf.T)
@@ -253,7 +255,7 @@ class OnACID(object):
         """
 
         t_start = time()
-        
+
         frame = frame_in.astype(np.float32, copy=False)
 #        lastframe = self.estimates.Yr_buf.get_last_frames(1).T.squeeze() #get last added? cur -1 ?
 
@@ -275,7 +277,6 @@ class OnACID(object):
         self.update_suff_stats(t-1)
         self.update_shape_components(num_added, t-1, t_start)
 
-
         (self.estimates.C_on[:M_rf, t], self.estimates.noisyC[:M_rf, t], res_frame, self.estimates.mn, 
             self.estimates.vr, self.estimates.sn, self.estimates.mean_buff, rho) = q.get()
         p.join()
@@ -284,6 +285,7 @@ class OnACID(object):
 
         return self
 
+    @profile
     def update_buffers_local(self, frame, t, res_frame, rho):
         self.estimates.Yr_buf.append(frame)
         self.estimates.Yres_buf.append(res_frame)
@@ -292,6 +294,7 @@ class OnACID(object):
         self.estimates.sv += self.estimates.rho_buf.get_last_frames(1).squeeze()
         self.estimates.sv = np.maximum(self.estimates.sv, 0)
 
+    @profile
     def update_buffers(self, frame, t):
         '''
         Update buffers
@@ -330,6 +333,7 @@ class OnACID(object):
             self.estimates.sv += self.estimates.rho_buf.get_last_frames(1).squeeze()
             self.estimates.sv = np.maximum(self.estimates.sv, 0)
 
+    @profile
     def regress_frame(self, frame, num_iters_hals, t):
         ''' fit a frame with the known neurons
         Args
@@ -347,6 +351,8 @@ class OnACID(object):
             iters=num_iters_hals, groups=self.estimates.groups)
 
 
+
+    @profile
     def update_shape_components(self, num_added, t, t_start):
         mbs = self.params.get('online', 'minibatch_shape')
         nb_ = self.params.get('init', 'nb')
@@ -462,6 +468,7 @@ class OnACID(object):
         self.t_shapes.append(time() - t_sh)
         return self
 
+    @profile
     def find_new_components(self, t):
         t_new = time()
         nb_ = self.params.get('init', 'nb')
@@ -525,6 +532,7 @@ class OnACID(object):
         self.t_detect.append(time() - t_new)
         return num_added
 
+    @profile
     def update_suff_stats(self, t):
         ''' update the sufficient statistics CC and CY
 
@@ -769,14 +777,14 @@ class OnACID(object):
 
                     if self.params.get('online', 'normalize'):
                         frame_ -= self.img_min     # make data non-negative
-                    t_mot = time()    
+                    t_mot = time()
                     if self.params.get('online', 'motion_correct'):    # motion correct
                         templ = self.estimates.Ab.dot(
                             self.estimates.C_on[:self.M, t-1]).reshape(self.params.get('data', 'dims'), order='F')*self.img_norm
                         if self.params.get('motion', 'pw_rigid'):
                             frame_cor1, shift = motion_correct_iteration_fast(
                                     frame_, templ, max_shifts_online, max_shifts_online)
-                            frame_cor, shift = tile_and_correct(frame_, templ, self.params.motion['strides'], self.params.motion['overlaps'], 
+                            frame_cor, shift = tile_and_correct(frame_, templ, self.params.motion['strides'], self.params.motion['overlaps'],
                                                                 self.params.motion['max_shifts'], newoverlaps=None, newstrides=None, upsample_factor_grid=4,
                                                                 upsample_factor_fft=10, show_movie=False, max_deviation_rigid=self.params.motion['max_deviation_rigid'],
                                                                 add_to_movie=0, shifts_opencv=True, gSig_filt=None,
@@ -789,7 +797,7 @@ class OnACID(object):
                         templ = None
                         frame_cor = frame_
                     self.t_motion.append(time() - t_mot)
-                    
+
                     if self.params.get('online', 'normalize'):
                         frame_cor = frame_cor/self.img_norm
                     self.fit_next(q, t, frame_cor.reshape(-1, order='F'))
@@ -842,7 +850,7 @@ class OnACID(object):
         C, f = est.C_on[gnb:self.M, :], est.C_on[:gnb, :]
         # inferred activity due to components (no background)
         frame_plot = (frame_cor.copy() - self.bnd_Y[0])/np.diff(self.bnd_Y)
-        comps_frame = A.dot(C[:, self.t - 1]).reshape(self.dims, order='F')        
+        comps_frame = A.dot(C[:, self.t - 1]).reshape(self.dims, order='F')
         bgkrnd_frame = b.dot(f[:, self.t - 1]).reshape(self.dims, order='F')  # denoised frame (components + background)
         denoised_frame = comps_frame + bgkrnd_frame
         denoised_frame = (denoised_frame.copy() - self.bnd_Y[0])/np.diff(self.bnd_Y)
@@ -857,7 +865,7 @@ class OnACID(object):
                                                   # spatial shapes
         frame_comp_1 = cv2.resize(np.concatenate([frame_plot, all_comps * 1.], axis=-1),
                                   (2 * np.int(self.dims[1] * resize_fact), np.int(self.dims[0] * resize_fact)))
-        frame_comp_2 = cv2.resize(np.concatenate([comps_frame, denoised_frame], axis=-1), 
+        frame_comp_2 = cv2.resize(np.concatenate([comps_frame, denoised_frame], axis=-1),
                                   (2 * np.int(self.dims[1] * resize_fact), np.int(self.dims[0] * resize_fact)))
         frame_pn = np.concatenate([frame_comp_1, frame_comp_2], axis=0).T
         vid_frame = np.repeat(frame_pn[:, :, None], 3, axis=-1)
@@ -1726,7 +1734,7 @@ def update_shapes(CY, CC, Ab, ind_A, sn=None, q=0.5, indicator_components=None,
             else:
                 for m in idx_comp:  # neurons
                     ind_pixels = ind_A[m - nb]
-                    tmp = np.maximum(Ab_dense[ind_pixels, m] + 
+                    tmp = np.maximum(Ab_dense[ind_pixels, m] +
                         ((CY[m, ind_pixels] - Ab_dense[ind_pixels].dot(CC[m])) / CC[m, m]), 0)
                     # normalize
                     if tmp.dot(tmp) > 0:

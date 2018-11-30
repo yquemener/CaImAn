@@ -4,7 +4,7 @@
 """
 Complete pipeline for online processing using CaImAn Online (OnACID).
 The demo demonstates the analysis of a sequence of files using the CaImAn online
-algorithm. The steps include i) motion correction, ii) tracking current 
+algorithm. The steps include i) motion correction, ii) tracking current
 components, iii) detecting new components, iv) updating of spatial footprints.
 The script demonstrates how to construct and use the params and online_cnmf
 objects required for the analysis, and presents the various parameters that
@@ -51,15 +51,16 @@ def main():
     extension = 'hdf5'                                  # extension of files
     # read all files to be processed
     fnames = glob.glob(folder_name + '/*' + extension)
+    fnames = '/mnt/ceph/neuro/labeling/neurofinder.02.00/images/mmap_tifs/images_all_rig__d1_512_d2_512_d3_1_order_F_frames_8000_.tif'
 
     # your list of files should look something like this
     logging.info(fnames)
 
 # %%   Set up some parameters
 
-    fr = 15  # frame rate (Hz)
-    decay_time = 0.5  # approximate length of transient event in seconds
-    gSig = (3, 3)  # expected half size of neurons
+    fr = 30  # frame rate (Hz)
+    decay_time = 0.3  # approximate length of transient event in seconds
+    gSig = [8, 8]  # expected half size of neurons
     p = 1  # order of AR indicator dynamics
     min_SNR = 1   # minimum SNR for accepting new components
     ds_factor = 1  # spatial downsampling factor (increases speed but may lose some fine structure)
@@ -73,8 +74,8 @@ def main():
     # set up some additional supporting parameters needed for the algorithm
     # (these are default values but can change depending on dataset properties)
     init_batch = 200  # number of frames for initialization (presumably from the first file)
-    K = 2  # initial number of components
-    epochs = 2  # number of passes over the data
+    K = 50  # initial number of components
+    epochs = 1  # number of passes over the data
     show_movie = False # show the movie as the data gets processed
 
     params_dict = {'fnames': fnames,
