@@ -428,7 +428,7 @@ class OnACID(object):
             self.update_counter *= .5 ** (1. / self.params.get('online', 'update_freq'))
             # if not num_added:
             if (not num_added) and (
-                    time() - t_start < 2 * self.time_spend / (t - self.params.get('online', 'init_batch') + 1)):
+                    time() - t_start < 2 * self.time_spend / (t - self.params.get('online', 'init_batch') + 2)):
                 candidates = np.where(self.update_counter <= 1)[0]
                 if len(candidates):
                     indicator_components = candidates[:self.N // mbs + 1]
