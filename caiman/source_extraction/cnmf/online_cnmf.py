@@ -238,7 +238,7 @@ class OnACID(object):
 
 
     @profile
-    def fit_next(self, q, t, frame_in, num_iters_hals=3):
+    def fit_next(self, q, q_in, t, frame_in, num_iters_hals=3):
         """
         This method fits the next frame using the online cnmf algorithm and
         updates the object.
@@ -269,9 +269,12 @@ class OnACID(object):
         Yrescur = self.estimates.Yres_buf[self.estimates.Yres_buf.cur]
         Yresmean = self.estimates.Yres_buf.mean(0)
 
-        p = Process(target=regress_ext, args=(q, frame, num_iters_hals, t, nb_, M_rf, AtY, self.estimates.AtA, self.estimates.noisyC[:self.M, t - 1], self.estimates.groups, self.estimates.OASISinstances,
-                self.estimates.Ab, self.estimates.ind_new, Yresmean, self.estimates.mn, self.estimates.vr, self.params, Yrescur, self.estimates.mean_buff))        
-        p.start()
+        #p = Process(target=regress_ext, args=(q, frame, num_iters_hals, t, nb_, M_rf, AtY, self.estimates.AtA, self.estimates.noisyC[:self.M, t - 1], self.estimates.groups, self.estimates.OASISinstances,
+        #        self.estimates.Ab, self.estimates.ind_new, Yresmean, self.estimates.mn, self.estimates.vr, self.params, Yrescur, self.estimates.mean_buff))        
+        #p.start()
+        
+        q_in.put([frame, num_iters_hals, t, nb_, M_rf, AtY, self.estimates.AtA, self.estimates.noisyC[:self.M, t - 1], self.estimates.groups, self.estimates.OASISinstances,
+                self.estimates.Ab, self.estimates.ind_new, Yresmean, self.estimates.mn, self.estimates.vr, self.params, Yrescur, self.estimates.mean_buff])
 
         num_added = self.find_new_components(t-1)
         self.update_suff_stats(t-1)
@@ -279,7 +282,7 @@ class OnACID(object):
 
         (self.estimates.C_on[:M_rf, t], self.estimates.noisyC[:M_rf, t], res_frame, self.estimates.mn, 
             self.estimates.vr, self.estimates.sn, self.estimates.mean_buff, rho) = q.get()
-        p.join()
+        #p.join()
 
         self.update_buffers_local(frame, t, res_frame, rho)
 
@@ -721,6 +724,11 @@ class OnACID(object):
             self (results of caiman online)
         """
         q = Queue()
+        q_in = Queue()
+        p = Process(target=regress_ext, args=(q_in,q))
+
+        p.start()
+
         fls = self.params.get('data', 'fnames')
         init_batch = self.params.get('online', 'init_batch')
         epochs = self.params.get('online', 'epochs')
@@ -800,7 +808,7 @@ class OnACID(object):
 
                     if self.params.get('online', 'normalize'):
                         frame_cor = frame_cor/self.img_norm
-                    self.fit_next(q, t, frame_cor.reshape(-1, order='F'))
+                    self.fit_next(q, q_in, t, frame_cor.reshape(-1, order='F'))
                     if self.params.get('online', 'show_movie'):
                         self.t = t
                         vid_frame = self.create_frame(frame_cor)
@@ -834,6 +842,9 @@ class OnACID(object):
         self.t_online = t_online
         self.estimates.C_on = self.estimates.C_on[:self.M]
         self.estimates.noisyC = self.estimates.noisyC[:self.M]
+
+        q_in.put(None) #signal done
+        p.join()
 
         return self
 
@@ -889,6 +900,7 @@ class OnACID(object):
                                                      10, vid_frame.shape[0] - 20), fontFace=5, fontScale=0.8, color=(0, 255, 255), thickness=1)
         return vid_frame
 
+    @profile
     def get_candidate_components(self, gHalf=(5,5), patch_size=50, thresh_std_peak_resid=1):
         """
         Extract new candidate components from the residual buffer and test them
@@ -1037,7 +1049,7 @@ class OnACID(object):
 
         return Ain, Cin, Cin_res, idx
 
-
+    @profile
     def update_num_components(self, t, mbs, Ains, Cins, Cins_res, inds, gHalf=(5,5),
                               bSiz=3, robust_std=False, remove_baseline=True, thresh_s_min=None):
         """
@@ -1496,36 +1508,48 @@ def HALS4activity(Yr, AtY, noisyC, AtA, iters=5, tol=1e-3, groups=None,
         num_iters += 1
     return C, noisyC
 
-def regress_ext(q, frame, num_iters_hals, t, nb_, M, AtY, AtA, noisyC_t1, groups, OASISinstances,
-                Ab, ind_new, Yres_mean, mn, vr, params, Yrescur, mean_buff):
+
+@profile
+#def regress_ext(q, frame, num_iters_hals, t, nb_, M, AtY, AtA, noisyC_t1, groups, OASISinstances,
+#                Ab, ind_new, Yres_mean, mn, vr, params, Yrescur, mean_buff):
+def regress_ext(q_in, q):
     """
     Runs code from regress_frame and update_buffers_ext for use in a separate process
     Returns: C_on, noisyC, mn, vr, sn, sv, and updated Yr_buf, Yres_buf, mean_buf, rho_buf
     """
-    #regress frame
-    C_on_t, noisyC_t = HALS4activity(frame, AtY, noisyC_t1, AtA, iters=num_iters_hals, groups=groups)
 
-    #compute updates for buffers
-    res_frame = frame - Ab.dot(C_on_t)
-    if len(ind_new) > 0:
-        mean_buff = Yres_mean
-    mn_ = mn.copy()
-    mn = (t - 1) / t * mn + res_frame / t
-    vr = (t - 1) / t * vr + (res_frame - mn_) * (res_frame - mn) / t
-    sn = np.sqrt(vr)
-    if params.get('online', 'update_num_comps'):
-        mean_buff += (res_frame - Yrescur) / params.get('online', 'minibatch_shape')
-        Yres_app = res_frame
+    while True:
+        try:
+            (frame, num_iters_hals, t, nb_, M, AtY, AtA, noisyC_t1, groups, OASISinstances,
+            Ab, ind_new, Yres_mean, mn, vr, params, Yrescur, mean_buff) = q_in.get()
+        except Exception as e:
+            break
+            #raise Exception
 
-        res_frame = np.reshape(res_frame, params.get('data', 'dims'), order='F')
+        #regress frame
+        C_on_t, noisyC_t = HALS4activity(frame, AtY, noisyC_t1, AtA, iters=num_iters_hals, groups=groups)
 
-        rho = imblur(np.maximum(res_frame, 0), sig=params.get('init', 'gSig'),
-                        siz=params.get('init', 'gSiz'), nDimBlur=len(params.get('data', 'dims'))) ** 2
+        #compute updates for buffers
+        res_frame = frame - Ab.dot(C_on_t)
+        if len(ind_new) > 0:
+            mean_buff = Yres_mean
+        mn_ = mn.copy()
+        mn = (t - 1) / t * mn + res_frame / t
+        vr = (t - 1) / t * vr + (res_frame - mn_) * (res_frame - mn) / t
+        sn = np.sqrt(vr)
+        if params.get('online', 'update_num_comps'):
+            mean_buff += (res_frame - Yrescur) / params.get('online', 'minibatch_shape')
+            Yres_app = res_frame
 
-        rho = np.reshape(rho, np.prod(params.get('data', 'dims')))
+            res_frame = np.reshape(res_frame, params.get('data', 'dims'), order='F')
 
-    q.put([C_on_t, noisyC_t, Yres_app, mn, vr, sn, mean_buff, rho])
-    #return 
+            rho = imblur(np.maximum(res_frame, 0), sig=params.get('init', 'gSig'),
+                            siz=params.get('init', 'gSiz'), nDimBlur=len(params.get('data', 'dims'))) ** 2
+
+            rho = np.reshape(rho, np.prod(params.get('data', 'dims')))
+
+        q.put([C_on_t, noisyC_t, Yres_app, mn, vr, sn, mean_buff, rho])
+
 
 def regress_frame(q, frame, num_iters_hals, t, nb_, M, AtY, AtA, noisyC_t1, groups, OASISinstances):
     ''' fit a frame with the known neurons
@@ -1863,7 +1887,7 @@ def corr(a, b):
     b -= b.mean()
     return a.dot(b) / sqrt(a.dot(a) * b.dot(b) + np.finfo(float).eps)
 
-
+@profile
 def rank1nmf(Ypx, ain):
     """
     perform a fast rank 1 NMF
