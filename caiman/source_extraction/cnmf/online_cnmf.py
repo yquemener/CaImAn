@@ -297,44 +297,44 @@ class OnACID(object):
         self.estimates.sv += self.estimates.rho_buf.get_last_frames(1).squeeze()
         self.estimates.sv = np.maximum(self.estimates.sv, 0)
 
-    @profile
-    def update_buffers(self, frame, t):
-        '''
-        Update buffers
-        @param frame:
-        @param t:
-        @return:
-        '''
-        res_frame = frame - self.estimates.Ab.dot(self.estimates.C_on[:self.M, t])
-        self.estimates.Yr_buf.append(frame)
-        if len(self.estimates.ind_new) > 0:
-            self.estimates.mean_buff = self.estimates.Yres_buf.mean(0)
-        mn_ = self.estimates.mn.copy()
-        # mean residual
-        self.estimates.mn = (t - 1) / t * self.estimates.mn + res_frame / t
-        # variance of pixels residual
-        self.estimates.vr = (t - 1) / t * self.estimates.vr + (res_frame - mn_) * (res_frame - self.estimates.mn) / t
-        # std of pixels residual
-        self.estimates.sn = np.sqrt(self.estimates.vr)
-        if self.params.get('online', 'update_num_comps'):
-            self.estimates.mean_buff += (res_frame - self.estimates.Yres_buf[
-                self.estimates.Yres_buf.cur]) / self.params.get('online', 'minibatch_shape')
-            self.estimates.Yres_buf.append(res_frame)
+    # @profile
+    # def update_buffers(self, frame, t):
+    #     '''
+    #     Update buffers
+    #     @param frame:
+    #     @param t:
+    #     @return:
+    #     '''
+    #     res_frame = frame - self.estimates.Ab.dot(self.estimates.C_on[:self.M, t])
+    #     self.estimates.Yr_buf.append(frame)
+    #     if len(self.estimates.ind_new) > 0:
+    #         self.estimates.mean_buff = self.estimates.Yres_buf.mean(0)
+    #     mn_ = self.estimates.mn.copy()
+    #     # mean residual
+    #     self.estimates.mn = (t - 1) / t * self.estimates.mn + res_frame / t
+    #     # variance of pixels residual
+    #     self.estimates.vr = (t - 1) / t * self.estimates.vr + (res_frame - mn_) * (res_frame - self.estimates.mn) / t
+    #     # std of pixels residual
+    #     self.estimates.sn = np.sqrt(self.estimates.vr)
+    #     if self.params.get('online', 'update_num_comps'):
+    #         self.estimates.mean_buff += (res_frame - self.estimates.Yres_buf[
+    #             self.estimates.Yres_buf.cur]) / self.params.get('online', 'minibatch_shape')
+    #         self.estimates.Yres_buf.append(res_frame)
 
-            res_frame = np.reshape(res_frame, self.params.get('data', 'dims'), order='F')
+    #         res_frame = np.reshape(res_frame, self.params.get('data', 'dims'), order='F')
 
-            rho = imblur(np.maximum(res_frame, 0), sig=self.params.get('init', 'gSig'),
-                         siz=self.params.get('init', 'gSiz'), nDimBlur=len(self.params.get('data', 'dims'))) ** 2
+    #         rho = imblur(np.maximum(res_frame, 0), sig=self.params.get('init', 'gSig'),
+    #                      siz=self.params.get('init', 'gSiz'), nDimBlur=len(self.params.get('data', 'dims'))) ** 2
 
-            rho = np.reshape(rho, np.prod(self.params.get('data', 'dims')))
-            self.estimates.rho_buf.append(rho)
+    #         rho = np.reshape(rho, np.prod(self.params.get('data', 'dims')))
+    #         self.estimates.rho_buf.append(rho)
 
-            ###
+    #         ###
 
-            self.estimates.sv -= self.estimates.rho_buf.get_first()
-            # update variance of residual buffer
-            self.estimates.sv += self.estimates.rho_buf.get_last_frames(1).squeeze()
-            self.estimates.sv = np.maximum(self.estimates.sv, 0)
+    #         self.estimates.sv -= self.estimates.rho_buf.get_first()
+    #         # update variance of residual buffer
+    #         self.estimates.sv += self.estimates.rho_buf.get_last_frames(1).squeeze()
+    #         self.estimates.sv = np.maximum(self.estimates.sv, 0)
 
     @profile
     def regress_frame(self, frame, num_iters_hals, t):
@@ -483,7 +483,7 @@ class OnACID(object):
 
         if self.params.get('online', 'update_num_comps'):
 
-            Ains, Cins, Cins_res, inds = self.get_candidate_components(gHalf)
+            Ains, Cins, Cins_res, inds = self.get_candidate_components(self.estimates.sv, gHalf=gHalf)
 
             Cf_temp = self.update_num_components(t, mbs, Ains, Cins, Cins_res, inds, gHalf)
 
@@ -901,7 +901,7 @@ class OnACID(object):
         return vid_frame
 
     @profile
-    def get_candidate_components(self, gHalf=(5,5), patch_size=50, thresh_std_peak_resid=1):
+    def get_candidate_components(self, sv, gHalf=(5,5), patch_size=50, thresh_std_peak_resid=1):
         """
         Extract new candidate components from the residual buffer and test them
         using space correlation or the CNN classifier. The function runs the CNN
@@ -926,14 +926,13 @@ class OnACID(object):
         idx = []
         all_indices = []
         ijsig_all = []
-        cnn_pos = []
         local_maxima = []
         Y_patch = []
         ksize = tuple([int(3 * i / 2) * 2 + 1 for i in gSig])
         compute_corr = test_both
 
         if use_peak_max:
-            img_select_peaks = self.estimates.sv.reshape(dims).copy()
+            img_select_peaks = sv.reshape(dims)
             #        plt.subplot(1,3,1)
             #        plt.cla()
             #        plt.imshow(img_select_peaks)
