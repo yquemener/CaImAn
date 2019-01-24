@@ -160,6 +160,8 @@ def clear_console(change):
     out_txt.value = ''
 
 def update_console(change):
+    if len(out_txt.value) > 1000000:
+        clear_console(None)
     for o in out.outputs:
         out_txt.value += o['text']
 
