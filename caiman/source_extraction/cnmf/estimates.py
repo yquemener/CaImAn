@@ -407,8 +407,7 @@ class Estimates(object):
     def play_movie(self, imgs, q_max=99.75, q_min=2, gain_res=1,
                    magnification=1, include_bck=True,
                    frame_range=slice(None, None, None),
-                   bpx=0):
-
+                   bpx=0, thr=0.):
         """Displays a movie with three panels (original data (left panel),
         reconstructed data (middle panel), residual (right panel))
 
@@ -437,6 +436,9 @@ class Estimates(object):
             bpx: int
                 number of pixels to exclude on each border
 
+            thr: float (values in [0, 1[)
+                threshold value for contours, no contours if thr=0
+
         Returns:
             self (to stop the movie press 'q')
         """
@@ -446,16 +448,11 @@ class Estimates(object):
         Y_rec = self.A.dot(self.C[:, frame_range])
         Y_rec = Y_rec.reshape(dims + (-1,), order='F')
         Y_rec = Y_rec.transpose([2, 0, 1])
-        if self.b is not None and self.f is not None:
-            B = self.b.dot(self.f[:, frame_range])
-            if 'matrix' in str(type(B)):
-                B = B.toarray()
-            B = B.reshape(dims + (-1,), order='F').transpose([2, 0, 1])
-        elif self.W is not None:
+        if self.W is not None:
             ssub_B = int(round(np.sqrt(np.prod(dims) / self.W.shape[0])))
             B = imgs[frame_range].reshape((-1, np.prod(dims)), order='F').T - \
                 self.A.dot(self.C[:, frame_range])
-            if ssub_B==1:
+            if ssub_B == 1:
                 B = self.b0[:, None] + self.W.dot(B - self.b0[:, None])
             else:
                 B = self.b0[:, None] + (np.repeat(np.repeat(self.W.dot(
@@ -466,6 +463,11 @@ class Estimates(object):
                     .reshape(((dims[0] - 1) // ssub_B + 1, (dims[1] - 1) // ssub_B + 1, -1), order='F'),
                     ssub_B, 0), ssub_B, 1)[:dims[0], :dims[1]].reshape((-1, B.shape[-1]), order='F'))
             B = B.reshape(dims + (-1,), order='F').transpose([2, 0, 1])
+        elif self.b is not None and self.f is not None:
+            B = self.b.dot(self.f[:, frame_range])
+            if 'matrix' in str(type(B)):
+                B = B.toarray()
+            B = B.reshape(dims + (-1,), order='F').transpose([2, 0, 1])
         else:
             B = np.zeros_like(Y_rec)
         if bpx > 0:
@@ -475,7 +477,42 @@ class Estimates(object):
 
         Y_res = imgs[frame_range] - Y_rec - B
 
-        caiman.concatenate((imgs[frame_range] - (not include_bck)*B, Y_rec + include_bck*B, Y_res*gain_res), axis=2).play(q_min=q_min, q_max=q_max, magnification=magnification)
+        mov = caiman.concatenate((imgs[frame_range] - (not include_bck) * B,
+                                  Y_rec + include_bck * B, Y_res * gain_res), axis=2)
+        if thr > 0:
+            import cv2
+            contours = []
+            for a in self.A.T.toarray():
+                a = a.reshape(dims, order='F')
+                if bpx > 0:
+                    a = a[bpx:-bpx, bpx:-bpx]
+                if magnification != 1:
+                    a = cv2.resize(a, None, fx=magnification, fy=magnification,
+                                   interpolation=cv2.INTER_LINEAR)
+                ret, thresh = cv2.threshold(a, thr * np.max(a), 1., 0)
+                im2, contour, hierarchy = cv2.findContours(
+                    thresh.astype('uint8'), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+                contours.append(contour)
+                contours.append(list([c + np.array([[a.shape[1], 0]]) for c in contour]))
+                contours.append(list([c + np.array([[2 * a.shape[1], 0]]) for c in contour]))
+
+            maxmov = np.nanpercentile(mov[0:10], q_max) if q_max < 100 else np.nanmax(mov)
+            minmov = np.nanpercentile(mov[0:10], q_min) if q_min > 0 else np.nanmin(mov)
+            for frame in mov:
+                if magnification != 1:
+                    frame = cv2.resize(frame, None, fx=magnification, fy=magnification,
+                                       interpolation=cv2.INTER_LINEAR)
+                frame = np.clip((frame - minmov) * 255. / (maxmov - minmov), 0, 255)
+                frame = np.repeat(frame[..., None], 3, 2)
+                for contour in contours:
+                    cv2.drawContours(frame, contour, -1, (0, 255, 255), 1)
+                cv2.imshow('frame', frame.astype('uint8'))
+                if cv2.waitKey(30) & 0xFF == ord('q'):
+                    break
+            cv2.destroyAllWindows()
+
+        else:
+            mov.play(q_min=q_min, q_max=q_max, magnification=magnification)
 
         return self
 

@@ -12,16 +12,17 @@ A Python toolbox for large scale **Ca**lcium **Im**aging data **An**alysis and b
 CaImAn implements a set of essential methods required in the analysis pipeline of large scale calcium imaging data. Fast and scalable algorithms are implemented for motion correction, source extraction, spike deconvolution, and component registration across multiple days. It is suitable for both two-photon and one-photon fluorescence microscopy data, and can be run in both batch and online modes. CaImAn also contains some routines for the analysis of behavior from video cameras. A list of features as well as relevant references can be found [here](https://github.com/flatironinstitute/CaImAn/wiki/CaImAn-features-and-references).
 
 ## Companion paper
-A paper explaining most of the implementation details and benchmarking can be found [here](https://www.biorxiv.org/content/early/2018/06/05/339564).
+A paper explaining most of the implementation details and benchmarking can be found [here](https://elifesciences.org/articles/38173).
 
 ```
-@article{giovannucci2018caiman,
+@article{giovannucci2019caiman,
   title={CaImAn: An open source tool for scalable Calcium Imaging data Analysis},
-  author={Giovannucci, Andrea and Friedrich, Johannes and Gunn, Pat and Kalfon, Jeremie and Koay, Sue Ann and Taxidis, Jiannis and Najafi, Farzaneh and Gauthier, Jeffrey L and Zhou, Pengcheng and Tank, David W and Chklovskii, Dmitri B and Pnevmatikakis, Eftychios A},
-  journal={bioRxiv},
-  pages={339564},
-  year={2018},
-  publisher={Cold Spring Harbor Laboratory}
+  author={Giovannucci, Andrea and Friedrich, Johannes and Gunn, Pat and Kalfon, Jeremie and Brown, Brandon L and Koay, Sue Ann and Taxidis, Jiannis and Najafi, Farzaneh and Gauthier, Jeffrey L and Zhou, Pengcheng and Khakh, Baljit S and Tank, David W and Chklovskii, Dmitri B and Pnevmatikakis, Eftychios A},
+  journal={eLife},
+  volume={8},
+  pages={e38173},
+  year={2019},
+  publisher={eLife Sciences Publications Limited}
 }
 ```
 
@@ -50,6 +51,11 @@ In July 2018, Python 2.x support was removed; Python 3.6 or higher is required f
 
 If you want to upgrade CaImAn (and have already used the pip installer to install it) follow the instructions given in the [wiki](https://github.com/flatironinstitute/CaImAn/wiki/Updating-CaImAn).
 
+Also, if you want to install new packages into your conda environment for CaImAn, it is important that you not mix conda-forge and the defaults channel; we recommend only using conda-forge. To ensure you're not mixing channels, perform the install (inside your environment) as follows:
+   ```bash
+   conda install -c conda-forge --override-channels NEW_PACKAGE_NAME
+   ```
+You will notice that any packages installed this way will mention, in their listing, that they're from conda-forge, with none of them having a blank origin. If you fail to do this, differences between how packages are built in conda-forge versus the default conda channels may mean that some packages (e.g. OpenCV) stop working despite showing as installed.
 
 ### Installation on Mac or Linux
 
@@ -104,6 +110,7 @@ Use the following menu item to launch a anaconda-enabled command prompt: start>p
    git clone  https://github.com/flatironinstitute/CaImAn
    cd CaImAn
    conda env create -f environment.yml -n caiman
+   conda install -n caiman vs2017_win-64
    activate caiman
    pip install . (OR pip install -e . if you want to develop code)
    copy caimanmanager.py ..
@@ -111,6 +118,10 @@ Use the following menu item to launch a anaconda-enabled command prompt: start>p
    cd ..
    ```
 Then run ```caimanmanager``` as described above to make a data directory.
+
+Things that can make your life easier on windows (but which take advanced Conda knowledge):
+   * Finding the keras_activate.bat script for your environment and change the KERAS_BACKEND env var from theano to tensorflow
+   * Remove the vs2015_compiler_vars.bat from your environment setup
 
 Alternative environments:
    * [Using GPU](/README-GPU.md)
