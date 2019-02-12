@@ -506,6 +506,7 @@ def run_cnmf_ui(_):
    ###
    #%% Now RUN CNMF (first time)
     cnm = cnmf.CNMF(context.n_processes, params=opts, dview=context.dview)
+    print("CNM fit!")
     cnm = cnm.fit(Yr)
 
     ## RUN CNMF second time
@@ -514,6 +515,7 @@ def run_cnmf_ui(_):
     #images = np.reshape(Yr.T, [T] + list(dims), order='F')
 
    #%% refit
+    print("CNM refit!")
     cnm2 = cnm.refit(Yr, dview=context.dview)
 
     cnm2.params.set('quality', {'min_SNR': min_snr_,
@@ -523,7 +525,6 @@ def run_cnmf_ui(_):
     cnm2.params.set('init', {'min_corr':min_corr, 'min_pnr':min_pnr,
                                     'ssub':ds_spatial, 'tsub':ds_temporal,'method_init':method_init
                                     })
-
     cnm2.estimates.evaluate_components(Yr, cnm2.params, dview=context.dview)
     save_movie_bool = bool(save_movie_widget.value)
     context.cnm = cnm2
