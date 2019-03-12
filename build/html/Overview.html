@@ -13,6 +13,7 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Core Functions" href="core_functions.html" />
@@ -41,11 +42,23 @@
             
   <div class="section" id="overview">
 <h1>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h1>
-<p>Python translation of Constrained Non-negative Matrix Factorization algorithm for source extraction from calcium imaging data.</p>
-<p>The code implements a method for simultaneous source extraction and spike inference from large scale calcium imaging movies. The code is suitable for the analysis of somatic imaging data. Implementation for the analysis of dendritic/axonal imaging data will be added in the future.</p>
-<p>The algorithm is presented in more detail in</p>
-<p>Pnevmatikakis, E.A., Soudry, D., Gao, Y., Machado, T., Merel, J., … &amp; Paninski, L. (2016). Simultaneous denoising, deconvolution, and demixing of calcium imaging data. Neuron, in press, <a class="reference external" href="http://dx.doi.org/10.1016/j.neuron.2015.11.037">http://dx.doi.org/10.1016/j.neuron.2015.11.037</a></p>
-<p>Pnevmatikakis, E.A., Gao, Y., Soudry, D., Pfau, D., Lacefield, C., … &amp; Paninski, L. (2014). A structured matrix factorization framework for large scale calcium imaging data analysis. arXiv preprint arXiv:1409.2903. http://arxiv.org/abs/1409.2903</p>
+<p>CaImAn is a Python toolbox for large scale <strong>Ca</strong>lcium <strong>Im</strong>aging data <strong>An</strong>alysis and behavioral analysis.</p>
+<p>CaImAn implements a set of essential methods required in the analysis pipeline of large scale calcium imaging data. Fast and scalable algorithms are implemented for motion correction, source extraction, spike deconvolution, and component registration across multiple days. It is suitable for both two-photon and one-photon fluorescence microscopy data, and can be run in both batch and online modes. CaImAn also contains some routines for the analysis of behavior from video cameras. A list of features as well as relevant references can be found <a class="reference external" href="https://github.com/flatironinstitute/CaImAn/wiki/CaImAn-features-and-references">here</a>.</p>
+<div class="section" id="companion-paper">
+<h2>Companion paper<a class="headerlink" href="#companion-paper" title="Permalink to this headline">¶</a></h2>
+<p>A paper explaining most of the implementation details and benchmarking can be found <a class="reference external" href="https://elifesciences.org/articles/38173">here</a>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@article</span><span class="p">{</span><span class="n">giovannucci2019caiman</span><span class="p">,</span>
+  <span class="n">title</span><span class="o">=</span><span class="p">{</span><span class="n">CaImAn</span><span class="p">:</span> <span class="n">An</span> <span class="nb">open</span> <span class="n">source</span> <span class="n">tool</span> <span class="k">for</span> <span class="n">scalable</span> <span class="n">Calcium</span> <span class="n">Imaging</span> <span class="n">data</span> <span class="n">Analysis</span><span class="p">},</span>
+  <span class="n">author</span><span class="o">=</span><span class="p">{</span><span class="n">Giovannucci</span><span class="p">,</span> <span class="n">Andrea</span> <span class="ow">and</span> <span class="n">Friedrich</span><span class="p">,</span> <span class="n">Johannes</span> <span class="ow">and</span> <span class="n">Gunn</span><span class="p">,</span> <span class="n">Pat</span> <span class="ow">and</span> <span class="n">Kalfon</span><span class="p">,</span> <span class="n">Jeremie</span> <span class="ow">and</span> <span class="n">Brown</span><span class="p">,</span> <span class="n">Brandon</span> <span class="n">L</span> <span class="ow">and</span> <span class="n">Koay</span><span class="p">,</span> <span class="n">Sue</span> <span class="n">Ann</span> <span class="ow">and</span> <span class="n">Taxidis</span><span class="p">,</span> <span class="n">Jiannis</span> <span class="ow">and</span> <span class="n">Najafi</span><span class="p">,</span> <span class="n">Farzaneh</span> <span class="ow">and</span> <span class="n">Gauthier</span><span class="p">,</span> <span class="n">Jeffrey</span> <span class="n">L</span> <span class="ow">and</span> <span class="n">Zhou</span><span class="p">,</span> <span class="n">Pengcheng</span> <span class="ow">and</span> <span class="n">Khakh</span><span class="p">,</span> <span class="n">Baljit</span> <span class="n">S</span> <span class="ow">and</span> <span class="n">Tank</span><span class="p">,</span> <span class="n">David</span> <span class="n">W</span> <span class="ow">and</span> <span class="n">Chklovskii</span><span class="p">,</span> <span class="n">Dmitri</span> <span class="n">B</span> <span class="ow">and</span> <span class="n">Pnevmatikakis</span><span class="p">,</span> <span class="n">Eftychios</span> <span class="n">A</span><span class="p">},</span>
+  <span class="n">journal</span><span class="o">=</span><span class="p">{</span><span class="n">eLife</span><span class="p">},</span>
+  <span class="n">volume</span><span class="o">=</span><span class="p">{</span><span class="mi">8</span><span class="p">},</span>
+  <span class="n">pages</span><span class="o">=</span><span class="p">{</span><span class="n">e38173</span><span class="p">},</span>
+  <span class="n">year</span><span class="o">=</span><span class="p">{</span><span class="mi">2019</span><span class="p">},</span>
+  <span class="n">publisher</span><span class="o">=</span><span class="p">{</span><span class="n">eLife</span> <span class="n">Sciences</span> <span class="n">Publications</span> <span class="n">Limited</span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
 <div class="section" id="contributors">
 <h2>Contributors<a class="headerlink" href="#contributors" title="Permalink to this headline">¶</a></h2>
 <p>Andrea Giovannucci and
@@ -55,10 +68,6 @@ Eftychios Pnevmatikakis</p>
 <div class="section" id="questions-comments-issues">
 <h2>Questions, comments, issues<a class="headerlink" href="#questions-comments-issues" title="Permalink to this headline">¶</a></h2>
 <p>Please use the gitter chat room (use the button above) for questions and comments and create an issue for any bugs you might encounter.</p>
-</div>
-<div class="section" id="important-note">
-<h2>Important note<a class="headerlink" href="#important-note" title="Permalink to this headline">¶</a></h2>
-<p>The implementation of this package is based on the matlab implementation which can be found [here](<a class="reference external" href="https://github.com/epnev/ca_source_extraction">https://github.com/epnev/ca_source_extraction</a>). Some of the Matlab features are currently lacking, but will be included in future releases.</p>
 </div>
 <div class="section" id="license">
 <h2>License<a class="headerlink" href="#license" title="Permalink to this headline">¶</a></h2>
@@ -81,12 +90,12 @@ along with this program.  If not, see &lt;<a class="reference external" href="ht
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
-  <h3><a href="index.html">Table Of Contents</a></h3>
+  <h3><a href="index.html">Table of Contents</a></h3>
   <ul>
 <li><a class="reference internal" href="#">Overview</a><ul>
+<li><a class="reference internal" href="#companion-paper">Companion paper</a></li>
 <li><a class="reference internal" href="#contributors">Contributors</a></li>
 <li><a class="reference internal" href="#questions-comments-issues">Questions, comments, issues</a></li>
-<li><a class="reference internal" href="#important-note">Important note</a></li>
 <li><a class="reference internal" href="#license">License</a></li>
 </ul>
 </li>
@@ -138,7 +147,7 @@ along with this program.  If not, see &lt;<a class="reference external" href="ht
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2018, Eftychios Pnevmatikakis and Andrea Giovannucci.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.5.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.4.
     </div>
   </body>
 </html>

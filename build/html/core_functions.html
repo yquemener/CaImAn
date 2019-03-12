@@ -13,6 +13,7 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="prev" title="Overview" href="Overview.html" /> 
@@ -60,7 +61,8 @@
 <td>Class for setting the processing parameters.</td>
 </tr>
 <tr class="row-even"><td><a class="reference internal" href="#caiman.source_extraction.cnmf.estimates.Estimates" title="caiman.source_extraction.cnmf.estimates.Estimates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">caiman.source_extraction.cnmf.estimates.Estimates</span></code></a>([…])</td>
-<td></td>
+<td><p class="rubric">Methods</p>
+</td>
 </tr>
 <tr class="row-odd"><td><a class="reference internal" href="#caiman.motion_correction.MotionCorrect" title="caiman.motion_correction.MotionCorrect"><code class="xref py py-obj docutils literal notranslate"><span class="pre">caiman.motion_correction.MotionCorrect</span></code></a>(fname)</td>
 <td>class implementing motion correction operations</td>
@@ -206,7 +208,7 @@ m=movie(input_arr, start_time=0,fr=33);</dd>
 <tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">bin_median</span></code>([window])</td>
 <td>compute median of 3D array in along axis o by binning values</td>
 </tr>
-<tr class="row-even"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">byteswap</span></code>(inplace)</td>
+<tr class="row-even"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">byteswap</span></code>([inplace])</td>
 <td>Swap the bytes of the array elements</td>
 </tr>
 <tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">choose</span></code>(choices[,&nbsp;out,&nbsp;mode])</td>
@@ -258,7 +260,7 @@ m=movie(input_arr, start_time=0,fr=33);</dd>
 <td>Performs motion corretion using the opencv matchtemplate function.</td>
 </tr>
 <tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">extract_traces_from_masks</span></code>(masks)</td>
-<td>Args:     masks: array, 3D with each 2D slice bein a mask (integer or fractional)</td>
+<td>Args:</td>
 </tr>
 <tr class="row-even"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">fill</span></code>(value)</td>
 <td>Fill the array with a scalar value.</td>
@@ -284,7 +286,7 @@ m=movie(input_arr, start_time=0,fr=33);</dd>
 <tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">local_correlations</span></code>([eight_neighbours,&nbsp;…])</td>
 <td>Computes the correlation image for the input dataset Y</td>
 </tr>
-<tr class="row-even"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">max</span></code>([axis,&nbsp;out])</td>
+<tr class="row-even"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">max</span></code>([axis,&nbsp;out,&nbsp;keepdims])</td>
 <td>Return the maximum along a given axis.</td>
 </tr>
 <tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">mean</span></code>([axis,&nbsp;dtype,&nbsp;out,&nbsp;keepdims])</td>
@@ -309,7 +311,7 @@ m=movie(input_arr, start_time=0,fr=33);</dd>
 <td>Method performing online matrix factorization and using the spams</td>
 </tr>
 <tr class="row-even"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">partition</span></code>(kth[,&nbsp;axis,&nbsp;kind,&nbsp;order])</td>
-<td>Rearranges the elements in the array in such a way that value of the element in kth position is in the position it would be in a sorted array.</td>
+<td>Rearranges the elements in the array in such a way that the value of the element in kth position is in the position it would be in a sorted array.</td>
 </tr>
 <tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">partition_FOV_KMeans</span></code>([tradeoff_weight,&nbsp;fx,&nbsp;…])</td>
 <td>Partition the FOV in clusters that are grouping pixels close in space and in mutual correlation</td>
@@ -320,7 +322,7 @@ m=movie(input_arr, start_time=0,fr=33);</dd>
 <tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">prod</span></code>([axis,&nbsp;dtype,&nbsp;out,&nbsp;keepdims])</td>
 <td>Return the product of the array elements over the given axis</td>
 </tr>
-<tr class="row-even"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">ptp</span></code>([axis,&nbsp;out])</td>
+<tr class="row-even"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">ptp</span></code>([axis,&nbsp;out,&nbsp;keepdims])</td>
 <td>Peak to peak (maximum - minimum) value along a given axis.</td>
 </tr>
 <tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">put</span></code>(indices,&nbsp;values[,&nbsp;mode])</td>
@@ -351,7 +353,7 @@ m=movie(input_arr, start_time=0,fr=33);</dd>
 <td>Put a value into a specified place in a field defined by a data-type.</td>
 </tr>
 <tr class="row-even"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">setflags</span></code>([write,&nbsp;align,&nbsp;uic])</td>
-<td>Set array flags WRITEABLE, ALIGNED, and UPDATEIFCOPY, respectively.</td>
+<td>Set array flags WRITEABLE, ALIGNED, (WRITEBACKIFCOPY and UPDATEIFCOPY), respectively.</td>
 </tr>
 <tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">sort</span></code>([axis,&nbsp;kind,&nbsp;order])</td>
 <td>Sort an array, in-place.</td>
@@ -718,7 +720,7 @@ and then the intermediate values are interpolated.</p>
 <tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">astype</span></code>(dtype[,&nbsp;order,&nbsp;casting,&nbsp;subok,&nbsp;copy])</td>
 <td>Copy of the array, cast to a specified type.</td>
 </tr>
-<tr class="row-even"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">byteswap</span></code>(inplace)</td>
+<tr class="row-even"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">byteswap</span></code>([inplace])</td>
 <td>Swap the bytes of the array elements</td>
 </tr>
 <tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">choose</span></code>(choices[,&nbsp;out,&nbsp;mode])</td>
@@ -772,7 +774,7 @@ and then the intermediate values are interpolated.</p>
 <tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">itemset</span></code>(*args)</td>
 <td>Insert scalar into an array (scalar is cast to array’s dtype, if possible)</td>
 </tr>
-<tr class="row-even"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">max</span></code>([axis,&nbsp;out])</td>
+<tr class="row-even"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">max</span></code>([axis,&nbsp;out,&nbsp;keepdims])</td>
 <td>Return the maximum along a given axis.</td>
 </tr>
 <tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">mean</span></code>([axis,&nbsp;dtype,&nbsp;out,&nbsp;keepdims])</td>
@@ -788,12 +790,12 @@ and then the intermediate values are interpolated.</p>
 <td>Return the indices of the elements that are non-zero.</td>
 </tr>
 <tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">partition</span></code>(kth[,&nbsp;axis,&nbsp;kind,&nbsp;order])</td>
-<td>Rearranges the elements in the array in such a way that value of the element in kth position is in the position it would be in a sorted array.</td>
+<td>Rearranges the elements in the array in such a way that the value of the element in kth position is in the position it would be in a sorted array.</td>
 </tr>
 <tr class="row-even"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">prod</span></code>([axis,&nbsp;dtype,&nbsp;out,&nbsp;keepdims])</td>
 <td>Return the product of the array elements over the given axis</td>
 </tr>
-<tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">ptp</span></code>([axis,&nbsp;out])</td>
+<tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">ptp</span></code>([axis,&nbsp;out,&nbsp;keepdims])</td>
 <td>Peak to peak (maximum - minimum) value along a given axis.</td>
 </tr>
 <tr class="row-even"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">put</span></code>(indices,&nbsp;values[,&nbsp;mode])</td>
@@ -824,7 +826,7 @@ and then the intermediate values are interpolated.</p>
 <td>Put a value into a specified place in a field defined by a data-type.</td>
 </tr>
 <tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">setflags</span></code>([write,&nbsp;align,&nbsp;uic])</td>
-<td>Set array flags WRITEABLE, ALIGNED, and UPDATEIFCOPY, respectively.</td>
+<td>Set array flags WRITEABLE, ALIGNED, (WRITEBACKIFCOPY and UPDATEIFCOPY), respectively.</td>
 </tr>
 <tr class="row-even"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">sort</span></code>([axis,&nbsp;kind,&nbsp;order])</td>
 <td>Sort an array, in-place.</td>
@@ -1356,34 +1358,40 @@ supported.</p>
 <tr class="row-even"><td><a class="reference internal" href="#caiman.source_extraction.cnmf.estimates.Estimates.evaluate_components_CNN" title="caiman.source_extraction.cnmf.estimates.Estimates.evaluate_components_CNN"><code class="xref py py-obj docutils literal notranslate"><span class="pre">evaluate_components_CNN</span></code></a>(params[,&nbsp;neuron_class])</td>
 <td>Estimates the quality of inferred spatial components using a pretrained CNN classifier.</td>
 </tr>
-<tr class="row-odd"><td><a class="reference internal" href="#caiman.source_extraction.cnmf.estimates.Estimates.filter_components" title="caiman.source_extraction.cnmf.estimates.Estimates.filter_components"><code class="xref py py-obj docutils literal notranslate"><span class="pre">filter_components</span></code></a>(imgs,&nbsp;**kwargs)</td>
+<tr class="row-odd"><td><a class="reference internal" href="#caiman.source_extraction.cnmf.estimates.Estimates.filter_components" title="caiman.source_extraction.cnmf.estimates.Estimates.filter_components"><code class="xref py py-obj docutils literal notranslate"><span class="pre">filter_components</span></code></a>(imgs,&nbsp;params[,&nbsp;new_dict,&nbsp;…])</td>
 <td>Filters components based on given thresholds without re-computing the quality metrics.</td>
 </tr>
-<tr class="row-even"><td><a class="reference internal" href="#caiman.source_extraction.cnmf.estimates.Estimates.nb_view_components" title="caiman.source_extraction.cnmf.estimates.Estimates.nb_view_components"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nb_view_components</span></code></a>([Yr,&nbsp;img,&nbsp;idx,&nbsp;…])</td>
+<tr class="row-even"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">manual_merge</span></code>(components,&nbsp;params)</td>
+<td>merge a given list of components.</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#caiman.source_extraction.cnmf.estimates.Estimates.nb_view_components" title="caiman.source_extraction.cnmf.estimates.Estimates.nb_view_components"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nb_view_components</span></code></a>([Yr,&nbsp;img,&nbsp;idx,&nbsp;…])</td>
 <td>view spatial and temporal components interactively in a notebook</td>
 </tr>
-<tr class="row-odd"><td><a class="reference internal" href="#caiman.source_extraction.cnmf.estimates.Estimates.nb_view_components_3d" title="caiman.source_extraction.cnmf.estimates.Estimates.nb_view_components_3d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nb_view_components_3d</span></code></a>([Yr,&nbsp;image_type,&nbsp;…])</td>
+<tr class="row-even"><td><a class="reference internal" href="#caiman.source_extraction.cnmf.estimates.Estimates.nb_view_components_3d" title="caiman.source_extraction.cnmf.estimates.Estimates.nb_view_components_3d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nb_view_components_3d</span></code></a>([Yr,&nbsp;image_type,&nbsp;…])</td>
 <td>view spatial and temporal components interactively in a notebook (version for 3d data)</td>
 </tr>
-<tr class="row-even"><td><a class="reference internal" href="#caiman.source_extraction.cnmf.estimates.Estimates.normalize_components" title="caiman.source_extraction.cnmf.estimates.Estimates.normalize_components"><code class="xref py py-obj docutils literal notranslate"><span class="pre">normalize_components</span></code></a>()</td>
+<tr class="row-odd"><td><a class="reference internal" href="#caiman.source_extraction.cnmf.estimates.Estimates.normalize_components" title="caiman.source_extraction.cnmf.estimates.Estimates.normalize_components"><code class="xref py py-obj docutils literal notranslate"><span class="pre">normalize_components</span></code></a>()</td>
 <td>Normalizes components such that spatial components have l_2 norm 1</td>
 </tr>
-<tr class="row-odd"><td><a class="reference internal" href="#caiman.source_extraction.cnmf.estimates.Estimates.play_movie" title="caiman.source_extraction.cnmf.estimates.Estimates.play_movie"><code class="xref py py-obj docutils literal notranslate"><span class="pre">play_movie</span></code></a>(imgs[,&nbsp;q_max,&nbsp;q_min,&nbsp;gain_res,&nbsp;…])</td>
+<tr class="row-even"><td><a class="reference internal" href="#caiman.source_extraction.cnmf.estimates.Estimates.play_movie" title="caiman.source_extraction.cnmf.estimates.Estimates.play_movie"><code class="xref py py-obj docutils literal notranslate"><span class="pre">play_movie</span></code></a>(imgs[,&nbsp;q_max,&nbsp;q_min,&nbsp;gain_res,&nbsp;…])</td>
 <td>Displays a movie with three panels (original data (left panel), reconstructed data (middle panel), residual (right panel))</td>
 </tr>
-<tr class="row-even"><td><a class="reference internal" href="#caiman.source_extraction.cnmf.estimates.Estimates.plot_contours" title="caiman.source_extraction.cnmf.estimates.Estimates.plot_contours"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_contours</span></code></a>([img,&nbsp;idx,&nbsp;crd,&nbsp;thr_method,&nbsp;thr])</td>
+<tr class="row-odd"><td><a class="reference internal" href="#caiman.source_extraction.cnmf.estimates.Estimates.plot_contours" title="caiman.source_extraction.cnmf.estimates.Estimates.plot_contours"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_contours</span></code></a>([img,&nbsp;idx,&nbsp;crd,&nbsp;thr_method,&nbsp;…])</td>
 <td>view contours of all spatial footprints.</td>
 </tr>
-<tr class="row-odd"><td><a class="reference internal" href="#caiman.source_extraction.cnmf.estimates.Estimates.plot_contours_nb" title="caiman.source_extraction.cnmf.estimates.Estimates.plot_contours_nb"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_contours_nb</span></code></a>([img,&nbsp;idx,&nbsp;crd,&nbsp;…])</td>
+<tr class="row-even"><td><a class="reference internal" href="#caiman.source_extraction.cnmf.estimates.Estimates.plot_contours_nb" title="caiman.source_extraction.cnmf.estimates.Estimates.plot_contours_nb"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_contours_nb</span></code></a>([img,&nbsp;idx,&nbsp;crd,&nbsp;…])</td>
 <td>view contours of all spatial footprints (notebook environment).</td>
 </tr>
-<tr class="row-even"><td><a class="reference internal" href="#caiman.source_extraction.cnmf.estimates.Estimates.remove_duplicates" title="caiman.source_extraction.cnmf.estimates.Estimates.remove_duplicates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">remove_duplicates</span></code></a>([predictions,&nbsp;r_values,&nbsp;…])</td>
+<tr class="row-odd"><td><a class="reference internal" href="#caiman.source_extraction.cnmf.estimates.Estimates.remove_duplicates" title="caiman.source_extraction.cnmf.estimates.Estimates.remove_duplicates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">remove_duplicates</span></code></a>([predictions,&nbsp;r_values,&nbsp;…])</td>
 <td>remove neurons that heavily overlapand might be duplicates</td>
 </tr>
-<tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">remove_small_large_neurons</span></code>(min_size_neuro,&nbsp;…)</td>
+<tr class="row-even"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">remove_small_large_neurons</span></code>(min_size_neuro,&nbsp;…)</td>
 <td>remove neurons that are too large or too small</td>
 </tr>
-<tr class="row-even"><td><a class="reference internal" href="#caiman.source_extraction.cnmf.estimates.Estimates.select_components" title="caiman.source_extraction.cnmf.estimates.Estimates.select_components"><code class="xref py py-obj docutils literal notranslate"><span class="pre">select_components</span></code></a>([idx_components,&nbsp;use_object])</td>
+<tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">restore_discarded_components</span></code>()</td>
+<td>Recover components that are filtered out with the select_components method &#64;param: None &#64;return: None</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#caiman.source_extraction.cnmf.estimates.Estimates.select_components" title="caiman.source_extraction.cnmf.estimates.Estimates.select_components"><code class="xref py py-obj docutils literal notranslate"><span class="pre">select_components</span></code></a>([idx_components,&nbsp;…])</td>
 <td>Keeps only a selected subset of components and removes the rest.</td>
 </tr>
 <tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">threshold_spatial_components</span></code>([maxthr,&nbsp;dview])</td>
@@ -1463,10 +1471,10 @@ empty then they are read from self.params.quality’]</p>
 <dd><dl class="first last docutils">
 <dt>imgs: np.array (possibly memory mapped, t,x,y[,z])</dt>
 <dd>Imaging data</dd>
-<dt>fr: float</dt>
-<dd>Imaging rate</dd>
-<dt>decay_time: float</dt>
-<dd>length of decay of typical transient (in seconds)</dd>
+<dt>params: params object</dt>
+<dd><p class="first">Parameters of the algorithm. The parameters in play here are
+contained in the subdictionary params.quality:</p>
+<dl class="last docutils">
 <dt>min_SNR: float</dt>
 <dd>trace SNR threshold</dd>
 <dt>rval_thr: float</dt>
@@ -1477,9 +1485,11 @@ empty then they are read from self.params.quality’]</p>
 <dd>CNN classifier threshold</dd>
 </dl>
 </dd>
+</dl>
+</dd>
 <dt>Returns:</dt>
 <dd><dl class="first last docutils">
-<dt>self: CNMF object</dt>
+<dt>self: esimates object</dt>
 <dd><dl class="first last docutils">
 <dt>self.idx_components: np.array</dt>
 <dd>indeces of accepted components</dd>
@@ -1524,7 +1534,7 @@ the required treshold.</dd>
 
 <dl class="method">
 <dt id="caiman.source_extraction.cnmf.estimates.Estimates.filter_components">
-<code class="descclassname">Estimates.</code><code class="descname">filter_components</code><span class="sig-paren">(</span><em>imgs</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#caiman.source_extraction.cnmf.estimates.Estimates.filter_components" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">Estimates.</code><code class="descname">filter_components</code><span class="sig-paren">(</span><em>imgs</em>, <em>params</em>, <em>new_dict={}</em>, <em>dview=None</em><span class="sig-paren">)</span><a class="headerlink" href="#caiman.source_extraction.cnmf.estimates.Estimates.filter_components" title="Permalink to this definition">¶</a></dt>
 <dd><p>Filters components based on given thresholds without re-computing
 the quality metrics. If the quality metrics are not present then it
 calls self.evaluate components.</p>
@@ -1533,10 +1543,14 @@ calls self.evaluate components.</p>
 <dd><dl class="first last docutils">
 <dt>imgs: np.array (possibly memory mapped, t,x,y[,z])</dt>
 <dd>Imaging data</dd>
-<dt>fr: float</dt>
-<dd>Imaging rate</dd>
-<dt>decay_time: float</dt>
-<dd>length of decay of typical transient (in seconds)</dd>
+<dt>params: params object</dt>
+<dd>Parameters of the algorithm</dd>
+<dt>new_dict: dict</dt>
+<dd><p class="first">New dictionary with parameters to be called. The dictionary
+modifies the params.quality subdictionary in the following
+entries:</p>
+<blockquote class="last">
+<div><dl class="docutils">
 <dt>min_SNR: float</dt>
 <dd>trace SNR threshold</dd>
 <dt>SNR_lowest: float</dt>
@@ -1554,10 +1568,13 @@ calls self.evaluate components.</p>
 <dt>gSig_range: list</dt>
 <dd>gSig scale values for CNN classifier</dd>
 </dl>
+</div></blockquote>
+</dd>
+</dl>
 </dd>
 <dt>Returns:</dt>
 <dd><dl class="first last docutils">
-<dt>self: CNMF object</dt>
+<dt>self: estimates object</dt>
 <dd><dl class="first last docutils">
 <dt>self.idx_components: np.array</dt>
 <dd>indeces of accepted components</dd>
@@ -1612,11 +1629,6 @@ image of all spatial components (d1 x d2)</dd>
 <dt>Yr <span class="classifier-delimiter">:</span> <span class="classifier">np.ndarray</span></dt>
 <dd>movie in format pixels (d) x frames (T) (only required to
 compute the correlation image)</dd>
-<dt>img <span class="classifier-delimiter">:</span> <span class="classifier">np.ndarray</span></dt>
-<dd>background image for contour plotting. Default is the mean
-image of all spatial components (d1 x d2)</dd>
-<dt>idx <span class="classifier-delimiter">:</span> <span class="classifier">list</span></dt>
-<dd>list of components to be plotted</dd>
 <dt>dims: tuple of ints</dt>
 <dd>dimensions of movie (x, y and z)</dd>
 <dt>image_type: ‘mean’|’max’|’corr’</dt>
@@ -1645,7 +1657,7 @@ maximum of shapes or nearest neigbor correlation of raw data)</dd>
 
 <dl class="method">
 <dt id="caiman.source_extraction.cnmf.estimates.Estimates.play_movie">
-<code class="descclassname">Estimates.</code><code class="descname">play_movie</code><span class="sig-paren">(</span><em>imgs</em>, <em>q_max=99.75</em>, <em>q_min=2</em>, <em>gain_res=1</em>, <em>magnification=1</em>, <em>include_bck=True</em>, <em>frame_range=slice(None</em>, <em>None</em>, <em>None)</em>, <em>bpx=0</em><span class="sig-paren">)</span><a class="headerlink" href="#caiman.source_extraction.cnmf.estimates.Estimates.play_movie" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">Estimates.</code><code class="descname">play_movie</code><span class="sig-paren">(</span><em>imgs</em>, <em>q_max=99.75</em>, <em>q_min=2</em>, <em>gain_res=1</em>, <em>magnification=1</em>, <em>include_bck=True</em>, <em>frame_range=slice(None</em>, <em>None</em>, <em>None)</em>, <em>bpx=0</em>, <em>thr=0.0</em><span class="sig-paren">)</span><a class="headerlink" href="#caiman.source_extraction.cnmf.estimates.Estimates.play_movie" title="Permalink to this definition">¶</a></dt>
 <dd><p>Displays a movie with three panels (original data (left panel),
 reconstructed data (middle panel), residual (right panel))</p>
 <dl class="docutils">
@@ -1667,6 +1679,8 @@ reconstructed data (middle panel), residual (right panel))</p>
 <dd>display only a subset of frames</dd>
 <dt>bpx: int</dt>
 <dd>number of pixels to exclude on each border</dd>
+<dt>thr: float (values in [0, 1[)</dt>
+<dd>threshold value for contours, no contours if thr=0</dd>
 </dl>
 </dd>
 <dt>Returns:</dt>
@@ -1676,7 +1690,7 @@ reconstructed data (middle panel), residual (right panel))</p>
 
 <dl class="method">
 <dt id="caiman.source_extraction.cnmf.estimates.Estimates.plot_contours">
-<code class="descclassname">Estimates.</code><code class="descname">plot_contours</code><span class="sig-paren">(</span><em>img=None</em>, <em>idx=None</em>, <em>crd=None</em>, <em>thr_method='max'</em>, <em>thr='0.2'</em><span class="sig-paren">)</span><a class="headerlink" href="#caiman.source_extraction.cnmf.estimates.Estimates.plot_contours" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">Estimates.</code><code class="descname">plot_contours</code><span class="sig-paren">(</span><em>img=None</em>, <em>idx=None</em>, <em>crd=None</em>, <em>thr_method='max'</em>, <em>thr='0.2'</em>, <em>display_numbers=True</em>, <em>params=None</em><span class="sig-paren">)</span><a class="headerlink" href="#caiman.source_extraction.cnmf.estimates.Estimates.plot_contours" title="Permalink to this definition">¶</a></dt>
 <dd><p>view contours of all spatial footprints.</p>
 <dl class="docutils">
 <dt>Args:</dt>
@@ -1692,6 +1706,10 @@ image of all spatial components (d1 x d2)</dd>
 <dd>thresholding method for computing contours (‘max’, ‘nrg’)</dd>
 <dt>thr <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
 <dd>threshold value</dd>
+<dt>display_numbers <span class="classifier-delimiter">:</span> <span class="classifier">bool</span></dt>
+<dd>flag for displaying the id number of each contour</dd>
+<dt>params <span class="classifier-delimiter">:</span> <span class="classifier">params object</span></dt>
+<dd>set of dictionary containing the various parameters</dd>
 </dl>
 </dd>
 </dl>
@@ -1699,7 +1717,7 @@ image of all spatial components (d1 x d2)</dd>
 
 <dl class="method">
 <dt id="caiman.source_extraction.cnmf.estimates.Estimates.plot_contours_nb">
-<code class="descclassname">Estimates.</code><code class="descname">plot_contours_nb</code><span class="sig-paren">(</span><em>img=None</em>, <em>idx=None</em>, <em>crd=None</em>, <em>thr_method='max'</em>, <em>thr='0.2'</em><span class="sig-paren">)</span><a class="headerlink" href="#caiman.source_extraction.cnmf.estimates.Estimates.plot_contours_nb" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">Estimates.</code><code class="descname">plot_contours_nb</code><span class="sig-paren">(</span><em>img=None</em>, <em>idx=None</em>, <em>crd=None</em>, <em>thr_method='max'</em>, <em>thr='0.2'</em>, <em>params=None</em><span class="sig-paren">)</span><a class="headerlink" href="#caiman.source_extraction.cnmf.estimates.Estimates.plot_contours_nb" title="Permalink to this definition">¶</a></dt>
 <dd><p>view contours of all spatial footprints (notebook environment).</p>
 <dl class="docutils">
 <dt>Args:</dt>
@@ -1715,6 +1733,8 @@ image of all spatial components (d1 x d2)</dd>
 <dd>thresholding method for computing contours (‘max’, ‘nrg’)</dd>
 <dt>thr <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
 <dd>threshold value</dd>
+<dt>params <span class="classifier-delimiter">:</span> <span class="classifier">params object</span></dt>
+<dd>set of dictionary containing the various parameters</dd>
 </dl>
 </dd>
 </dl>
@@ -1737,7 +1757,7 @@ plot_duplicates</dd>
 
 <dl class="method">
 <dt id="caiman.source_extraction.cnmf.estimates.Estimates.select_components">
-<code class="descclassname">Estimates.</code><code class="descname">select_components</code><span class="sig-paren">(</span><em>idx_components=None</em>, <em>use_object=False</em><span class="sig-paren">)</span><a class="headerlink" href="#caiman.source_extraction.cnmf.estimates.Estimates.select_components" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">Estimates.</code><code class="descname">select_components</code><span class="sig-paren">(</span><em>idx_components=None</em>, <em>use_object=False</em>, <em>save_discarded_components=True</em><span class="sig-paren">)</span><a class="headerlink" href="#caiman.source_extraction.cnmf.estimates.Estimates.select_components" title="Permalink to this definition">¶</a></dt>
 <dd><p>Keeps only a selected subset of components and removes the rest.
 The subset can be either user defined with the variable idx_components
 or read from the estimates object. The flag use_object determines this
@@ -1749,6 +1769,8 @@ choice. If no subset is present then all components are kept.</p>
 <dd>indeces of components to be kept</dd>
 <dt>use_object: bool</dt>
 <dd>Flag to use self.idx_components for reading the indeces.</dd>
+<dt>save_discarded_components: bool</dt>
+<dd>whether to save the components from initialization so that they can be restored using the restore_discarded_components method</dd>
 </dl>
 </dd>
 <dt>Returns:</dt>
@@ -1920,7 +1942,7 @@ Friedrich J, Zhou P, and Paninski L, arXiv 2016</dd>
 <h2>Parameter Setting<a class="headerlink" href="#parameter-setting" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="caiman.source_extraction.cnmf.params.CNMFParams">
-<em class="property">class </em><code class="descclassname">caiman.source_extraction.cnmf.params.</code><code class="descname">CNMFParams</code><span class="sig-paren">(</span><em>fnames=None, dims=None, dxy=(1, 1), border_pix=0, del_duplicates=False, low_rank_background=True, memory_fact=1, n_processes=1, nb_patch=1, p_ssub=2, p_tsub=2, remove_very_bad_comps=False, rf=None, stride=None, check_nan=True, n_pixels_per_process=None, k=30, alpha_snmf=1000.0, center_psf=False, gSig=[5, 5], gSiz=None, init_iter=2, method_init='greedy_roi', min_corr=0.85, min_pnr=20, gnb=1, normalize_init=True, options_local_NMF=None, ring_size_factor=1.5, rolling_length=100, rolling_sum=True, ssub=2, ssub_B=2, tsub=2, block_size=5000, num_blocks_per_run=20, update_background_components=True, method_deconvolution='oasis', p=2, s_min=None, do_merge=True, merge_thresh=0.8, decay_time=0.4, fr=30, min_SNR=2.5, rval_thr=0.8, N_samples_exceptionality=None, batch_update_suff_stat=False, expected_comps=500, max_comp_update_shape=inf, max_num_added=5, min_num_trial=5, minibatch_shape=100, minibatch_suff_stat=5, n_refit=0, num_times_comp_updated=inf, simultaneously=False, sniper_mode=False, test_both=False, thresh_CNN_noisy=0.5, thresh_fitness_delta=-50, thresh_fitness_raw=None, thresh_overlap=0.5, update_num_comps=True, use_dense=True, use_peak_max=True, only_init_patch=False, params_dict={}</em><span class="sig-paren">)</span><a class="headerlink" href="#caiman.source_extraction.cnmf.params.CNMFParams" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">caiman.source_extraction.cnmf.params.</code><code class="descname">CNMFParams</code><span class="sig-paren">(</span><em>fnames=None, dims=None, dxy=(1, 1), border_pix=0, del_duplicates=False, low_rank_background=True, memory_fact=1, n_processes=1, nb_patch=1, p_ssub=2, p_tsub=2, remove_very_bad_comps=False, rf=None, stride=None, check_nan=True, n_pixels_per_process=None, k=30, alpha_snmf=1000.0, center_psf=False, gSig=[5, 5], gSiz=None, init_iter=2, method_init='greedy_roi', min_corr=0.85, min_pnr=20, gnb=1, normalize_init=True, options_local_NMF=None, ring_size_factor=1.5, rolling_length=100, rolling_sum=True, ssub=2, ssub_B=2, tsub=2, block_size_spat=5000, num_blocks_per_run_spat=20, block_size_temp=5000, num_blocks_per_run_temp=20, update_background_components=True, method_deconvolution='oasis', p=2, s_min=None, do_merge=True, merge_thresh=0.8, decay_time=0.4, fr=30, min_SNR=2.5, rval_thr=0.8, N_samples_exceptionality=None, batch_update_suff_stat=False, expected_comps=500, iters_shape=5, max_comp_update_shape=inf, max_num_added=5, min_num_trial=5, minibatch_shape=100, minibatch_suff_stat=5, n_refit=0, num_times_comp_updated=inf, simultaneously=False, sniper_mode=False, test_both=False, thresh_CNN_noisy=0.5, thresh_fitness_delta=-50, thresh_fitness_raw=None, thresh_overlap=0.5, update_freq=200, update_num_comps=True, use_dense=True, use_peak_max=True, only_init_patch=True, params_dict={}</em><span class="sig-paren">)</span><a class="headerlink" href="#caiman.source_extraction.cnmf.params.CNMFParams" title="Permalink to this definition">¶</a></dt>
 <dd><p class="rubric">Methods</p>
 <table border="1" class="longtable docutils">
 <colgroup>
@@ -1934,8 +1956,8 @@ Friedrich J, Zhou P, and Paninski L, arXiv 2016</dd>
 <tr class="row-even"><td><a class="reference internal" href="#caiman.source_extraction.cnmf.params.CNMFParams.get_group" title="caiman.source_extraction.cnmf.params.CNMFParams.get_group"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_group</span></code></a>(group)</td>
 <td>Get the dictionary of key-value pairs for a group.</td>
 </tr>
-<tr class="row-odd"><td><a class="reference internal" href="#caiman.source_extraction.cnmf.params.CNMFParams.set" title="caiman.source_extraction.cnmf.params.CNMFParams.set"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set</span></code></a>(group,&nbsp;val_dict[,&nbsp;set_if_not_exists])</td>
-<td>Add key-value pairs to a group.</td>
+<tr class="row-odd"><td><a class="reference internal" href="#caiman.source_extraction.cnmf.params.CNMFParams.set" title="caiman.source_extraction.cnmf.params.CNMFParams.set"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set</span></code></a>(group,&nbsp;val_dict[,&nbsp;set_if_not_exists,&nbsp;…])</td>
+<td>Add key-value pairs to a group. Existing key-value pairs will be overwritten</td>
 </tr>
 </tbody>
 </table>
@@ -1957,7 +1979,7 @@ Friedrich J, Zhou P, and Paninski L, arXiv 2016</dd>
 
 <dl class="method">
 <dt id="caiman.source_extraction.cnmf.params.CNMFParams.set">
-<code class="descclassname">CNMFParams.</code><code class="descname">set</code><span class="sig-paren">(</span><em>group</em>, <em>val_dict</em>, <em>set_if_not_exists=False</em><span class="sig-paren">)</span><a class="headerlink" href="#caiman.source_extraction.cnmf.params.CNMFParams.set" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">CNMFParams.</code><code class="descname">set</code><span class="sig-paren">(</span><em>group</em>, <em>val_dict</em>, <em>set_if_not_exists=False</em>, <em>verbose=False</em><span class="sig-paren">)</span><a class="headerlink" href="#caiman.source_extraction.cnmf.params.CNMFParams.set" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="docutils">
 <dt>Add key-value pairs to a group. Existing key-value pairs will be overwritten</dt>
 <dd>if specified in val_dict, but not deleted.</dd>
@@ -1992,7 +2014,7 @@ key: The key for the property in the group of interest.</dd>
 
 <dl class="method">
 <dt id="caiman.source_extraction.cnmf.params.CNMFParams.change_params">
-<code class="descclassname">CNMFParams.</code><code class="descname">change_params</code><span class="sig-paren">(</span><em>params_dict</em><span class="sig-paren">)</span><a class="headerlink" href="#caiman.source_extraction.cnmf.params.CNMFParams.change_params" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">CNMFParams.</code><code class="descname">change_params</code><span class="sig-paren">(</span><em>params_dict</em>, <em>verbose=False</em><span class="sig-paren">)</span><a class="headerlink" href="#caiman.source_extraction.cnmf.params.CNMFParams.change_params" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </div>
@@ -2000,7 +2022,7 @@ key: The key for the property in the group of interest.</dd>
 <h2>CNMF<a class="headerlink" href="#cnmf" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="caiman.source_extraction.cnmf.cnmf.CNMF">
-<em class="property">class </em><code class="descclassname">caiman.source_extraction.cnmf.cnmf.</code><code class="descname">CNMF</code><span class="sig-paren">(</span><em>n_processes, k=5, gSig=[4, 4], gSiz=None, merge_thresh=0.8, p=2, dview=None, Ain=None, Cin=None, b_in=None, f_in=None, do_merge=True, ssub=2, tsub=2, p_ssub=1, p_tsub=1, method_init='greedy_roi', alpha_snmf=None, rf=None, stride=None, memory_fact=1, gnb=1, nb_patch=1, only_init_patch=False, method_deconvolution='oasis', n_pixels_per_process=4000, block_size=5000, num_blocks_per_run=20, check_nan=True, skip_refinement=False, normalize_init=True, options_local_NMF=None, minibatch_shape=100, minibatch_suff_stat=3, update_num_comps=True, rval_thr=0.9, thresh_fitness_delta=-20, thresh_fitness_raw=None, thresh_overlap=0.5, max_comp_update_shape=inf, num_times_comp_updated=inf, batch_update_suff_stat=False, s_min=None, remove_very_bad_comps=False, border_pix=0, low_rank_background=True, update_background_components=True, rolling_sum=True, rolling_length=100, min_corr=0.85, min_pnr=20, ring_size_factor=1.5, center_psf=False, use_dense=True, deconv_flag=True, simultaneously=False, n_refit=0, del_duplicates=False, N_samples_exceptionality=None, max_num_added=3, min_num_trial=2, thresh_CNN_noisy=0.5, fr=30, decay_time=0.4, min_SNR=2.5, ssub_B=2, init_iter=2, sniper_mode=False, use_peak_max=False, test_both=False, expected_comps=500, params=None</em><span class="sig-paren">)</span><a class="headerlink" href="#caiman.source_extraction.cnmf.cnmf.CNMF" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">caiman.source_extraction.cnmf.cnmf.</code><code class="descname">CNMF</code><span class="sig-paren">(</span><em>n_processes, k=5, gSig=[4, 4], gSiz=None, merge_thresh=0.8, p=2, dview=None, Ain=None, Cin=None, b_in=None, f_in=None, do_merge=True, ssub=2, tsub=2, p_ssub=1, p_tsub=1, method_init='greedy_roi', alpha_snmf=None, rf=None, stride=None, memory_fact=1, gnb=1, nb_patch=1, only_init_patch=False, method_deconvolution='oasis', n_pixels_per_process=4000, block_size_temp=5000, num_blocks_per_run_temp=20, block_size_spat=5000, num_blocks_per_run_spat=20, check_nan=True, skip_refinement=False, normalize_init=True, options_local_NMF=None, minibatch_shape=100, minibatch_suff_stat=3, update_num_comps=True, rval_thr=0.9, thresh_fitness_delta=-20, thresh_fitness_raw=None, thresh_overlap=0.5, max_comp_update_shape=inf, num_times_comp_updated=inf, batch_update_suff_stat=False, s_min=None, remove_very_bad_comps=False, border_pix=0, low_rank_background=True, update_background_components=True, rolling_sum=True, rolling_length=100, min_corr=0.85, min_pnr=20, ring_size_factor=1.5, center_psf=False, use_dense=True, deconv_flag=True, simultaneously=False, n_refit=0, del_duplicates=False, N_samples_exceptionality=None, max_num_added=3, min_num_trial=2, thresh_CNN_noisy=0.5, fr=30, decay_time=0.4, min_SNR=2.5, ssub_B=2, init_iter=2, sniper_mode=False, use_peak_max=False, test_both=False, expected_comps=500, params=None</em><span class="sig-paren">)</span><a class="headerlink" href="#caiman.source_extraction.cnmf.cnmf.CNMF" title="Permalink to this definition">¶</a></dt>
 <dd><p>Source extraction using constrained non-negative matrix factorization.</p>
 <p>The general class which is used to produce a factorization of the Y matrix being the video
 it computes it using all the files inside of cnmf folder.
@@ -2482,8 +2504,8 @@ Optional use of spatio-temporal downsampling to boost speed.</p>
 <dd>Whether to normalize_init data before running the initialization</dd>
 <dt>img: optional [np 2d array]</dt>
 <dd>Image with which to normalize. If not present use the mean + offset</dd>
-<dt>method: str</dt>
-<dd>Initialization method ‘greedy_roi’ or ‘sparse_nmf’</dd>
+<dt>method_init: str</dt>
+<dd>Initialization method ‘greedy_roi’, ‘corr_pnr’. The latter can only be used for 2D data and it is compulsory for endoscopic one-photon data.</dd>
 <dt>max_iter_snmf: int</dt>
 <dd>Maximum number of sparse NMF iterations</dd>
 <dt>alpha_snmf: scalar</dt>
@@ -2540,7 +2562,7 @@ fluctuations.</dd>
 <h2>Spatial Components<a class="headerlink" href="#spatial-components" title="Permalink to this headline">¶</a></h2>
 <dl class="function">
 <dt id="caiman.source_extraction.cnmf.spatial.update_spatial_components">
-<code class="descclassname">caiman.source_extraction.cnmf.spatial.</code><code class="descname">update_spatial_components</code><span class="sig-paren">(</span><em>Y, C=None, f=None, A_in=None, sn=None, dims=None, min_size=3, max_size=8, dist=3, normalize_yyt_one=True, method_exp='dilate', expandCore=None, dview=None, n_pixels_per_process=128, medw=(3, 3), thr_method='max', maxthr=0.1, nrgthr=0.9999, extract_cc=True, b_in=None, se=array([[1, 1, 1],        [1, 1, 1],        [1, 1, 1]]), ss=array([[1, 1, 1],        [1, 1, 1],        [1, 1, 1]]), nb=1, method_ls='lasso_lars', update_background_components=True, low_rank_background=True, block_size=1000, num_blocks_per_run=20</em><span class="sig-paren">)</span><a class="headerlink" href="#caiman.source_extraction.cnmf.spatial.update_spatial_components" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">caiman.source_extraction.cnmf.spatial.</code><code class="descname">update_spatial_components</code><span class="sig-paren">(</span><em>Y, C=None, f=None, A_in=None, sn=None, dims=None, min_size=3, max_size=8, dist=3, normalize_yyt_one=True, method_exp='dilate', expandCore=None, dview=None, n_pixels_per_process=128, medw=(3, 3), thr_method='max', maxthr=0.1, nrgthr=0.9999, extract_cc=True, b_in=None, se=array([[1, 1, 1],        [1, 1, 1],        [1, 1, 1]]), ss=array([[1, 1, 1],        [1, 1, 1],        [1, 1, 1]]), nb=1, method_ls='lasso_lars', update_background_components=True, low_rank_background=True, block_size_spat=1000, num_blocks_per_run_spat=20</em><span class="sig-paren">)</span><a class="headerlink" href="#caiman.source_extraction.cnmf.spatial.update_spatial_components" title="Permalink to this definition">¶</a></dt>
 <dd><p>update spatial footprints and background through Basis Pursuit Denoising</p>
 <dl class="docutils">
 <dt>for each pixel i solve the problem</dt>
@@ -2636,7 +2658,7 @@ SLURM: use the slurm scheduler</dd>
 <h2>Temporal Components<a class="headerlink" href="#temporal-components" title="Permalink to this headline">¶</a></h2>
 <dl class="function">
 <dt id="caiman.source_extraction.cnmf.temporal.update_temporal_components">
-<code class="descclassname">caiman.source_extraction.cnmf.temporal.</code><code class="descname">update_temporal_components</code><span class="sig-paren">(</span><em>Y</em>, <em>A</em>, <em>b</em>, <em>Cin</em>, <em>fin</em>, <em>bl=None</em>, <em>c1=None</em>, <em>g=None</em>, <em>sn=None</em>, <em>nb=1</em>, <em>ITER=2</em>, <em>block_size=5000</em>, <em>num_blocks_per_run=20</em>, <em>debug=False</em>, <em>dview=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#caiman.source_extraction.cnmf.temporal.update_temporal_components" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">caiman.source_extraction.cnmf.temporal.</code><code class="descname">update_temporal_components</code><span class="sig-paren">(</span><em>Y</em>, <em>A</em>, <em>b</em>, <em>Cin</em>, <em>fin</em>, <em>bl=None</em>, <em>c1=None</em>, <em>g=None</em>, <em>sn=None</em>, <em>nb=1</em>, <em>ITER=2</em>, <em>block_size_temp=5000</em>, <em>num_blocks_per_run_temp=20</em>, <em>debug=False</em>, <em>dview=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#caiman.source_extraction.cnmf.temporal.update_temporal_components" title="Permalink to this definition">¶</a></dt>
 <dd><p>Update temporal components and background given spatial components using a block coordinate descent approach.</p>
 <dl class="docutils">
 <dt>Args:</dt>
@@ -2886,7 +2908,7 @@ components by creating a nest of random approximate vertex covers</p>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
-  <h3><a href="index.html">Table Of Contents</a></h3>
+  <h3><a href="index.html">Table of Contents</a></h3>
   <ul>
 <li><a class="reference internal" href="#">Core Functions</a><ul>
 <li><a class="reference internal" href="#movie-handling">Movie Handling</a></li>
@@ -2951,7 +2973,7 @@ components by creating a nest of random approximate vertex covers</p>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2018, Eftychios Pnevmatikakis and Andrea Giovannucci.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.5.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.4.
     </div>
   </body>
 </html>
