@@ -1,0 +1,234 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Demos &#8212; CaImAn 1.0.0 documentation</title>
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Core Functions" href="core_functions.html" />
+    <link rel="prev" title="Overview" href="Overview.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="core_functions.html" title="Core Functions"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="Overview.html" title="Overview"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">CaImAn 1.0.0 documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="demos">
+<h1>Demos<a class="headerlink" href="#demos" title="Permalink to this headline">¶</a></h1>
+<ul>
+<li><p class="first">Notebooks: The notebooks provide a simple and friendly way to get
+into CaImAn and understand its main characteristics. They are located
+in the <code class="docutils literal notranslate"><span class="pre">demos/notebooks</span></code>. To launch one of the jupyter notebooks:</p>
+<div class="code bash highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">source</span> <span class="n">activate</span> <span class="n">CaImAn</span>
+<span class="n">jupyter</span> <span class="n">notebook</span> <span class="o">--</span><span class="n">NotebookApp</span><span class="o">.</span><span class="n">iopub_data_rate_limit</span><span class="o">=</span><span class="mf">1.0e10</span>
+</pre></div>
+</div>
+<p>and select the notebook from within Jupyter’s browser. The argument
+<code class="docutils literal notranslate"><span class="pre">--NotebookApp.iopub_data_rate_limit=1.0e10</span></code> will prevent any
+memory issues while plotting on a notebook.</p>
+</li>
+<li><p class="first">demo files are also found in the demos/general subfolder. We suggest
+trying demo_pipeline.py first as it contains most of the tasks
+required by calcium imaging. For behavior use demo_behavior.py</p>
+</li>
+<li><p class="first">If you want to directly launch the python files, your python console
+still must be in the CaImAn directory.</p>
+</li>
+</ul>
+</div>
+<div class="section" id="basic-structure">
+<h1>Basic Structure<a class="headerlink" href="#basic-structure" title="Permalink to this headline">¶</a></h1>
+<p>We recently refactored the code to simplify the parameter setting and
+usage of the various algorithms. The code now is based revolves around
+the following objects:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">params</span></code>: A single object containing a set of dictionaries with the
+parameters used in all the algorithms. It can be set and changed
+easily and is passed into all the algorithms.</li>
+<li><code class="docutils literal notranslate"><span class="pre">MotionCorrect</span></code>: An object for motion correction which can be used
+for both rigid and piece-wise rigid motion correction.</li>
+<li><code class="docutils literal notranslate"><span class="pre">cnmf</span></code>: An object for running the CaImAn batch algorithm either in
+patches or not, suitable for both two-photon (CNMF) and one-photon
+(CNMF-E) data.</li>
+<li><code class="docutils literal notranslate"><span class="pre">online_cnmf</span></code>: An object for running the CaImAn online (OnACID)
+algorithm on two-photon data with or without motion correction.</li>
+<li><code class="docutils literal notranslate"><span class="pre">estimates</span></code>: A single object that stores the results of the
+algorithms (CaImAn batch, CaImAn online) in a unified way that also
+contains plotting methods.</li>
+</ul>
+<p>To see examples of how these methods are used, please consult the demos.</p>
+</div>
+<div class="section" id="result-interpretation">
+<h1>Result Interpretation<a class="headerlink" href="#result-interpretation" title="Permalink to this headline">¶</a></h1>
+<p>As mentioned above, the results of the analysis are stored within the
+<code class="docutils literal notranslate"><span class="pre">estimates</span></code> objects. The basic entries are the following:</p>
+<div class="section" id="result-variables-for-2p-batch-analysis">
+<h2>Result variables for 2p batch analysis<a class="headerlink" href="#result-variables-for-2p-batch-analysis" title="Permalink to this headline">¶</a></h2>
+<p>The results of CaImAn are saved in an <code class="docutils literal notranslate"><span class="pre">estimates</span></code> object. This is
+stored inside the cnmf object, i.e.&nbsp;it can be accessed using
+<code class="docutils literal notranslate"><span class="pre">cnmf.estimates</span></code>. The variables of interest are: - <code class="docutils literal notranslate"><span class="pre">estimates.A</span></code>:
+Set of spatial components. Saved as a sparse column format matrix with
+dimensions (# of pixels X # of components). Each column corresponds to a
+spatial component. - <code class="docutils literal notranslate"><span class="pre">estimates.C</span></code>: Set of temporal components. Saved
+as a numpy array with dimensions (# of components X # of timesteps).
+Each row corresponds to a background component denoised and deconvolved.
+- <code class="docutils literal notranslate"><span class="pre">estimates.b</span></code>: Set of background spatial components (for 2p
+analysis): Saved as a numpy array with dimensions (# of pixels X # of
+components). Each column corresponds to a spatial background component.
+- <code class="docutils literal notranslate"><span class="pre">estimates.f</span></code>: Set of temporal background components (for 2p
+analysis). Saved as a numpy array with dimensions (# of background
+components X # of timesteps). Each row corresponds to a temporal
+background component. - <code class="docutils literal notranslate"><span class="pre">estimates.S</span></code>: Deconvolved neural activity
+(spikes) for each component. Saved as a numpy array with dimensions (#
+of background components X # of timesteps). Each row corresponds to the
+deconvolved neural activity for the corresponding component. -
+<code class="docutils literal notranslate"><span class="pre">estimates.YrA</span></code>: Set or residual components. Saved as a numpy array
+with dimensions (# of components X # of timesteps). Each row corresponds
+to the residual signal after denoising the corresponding component in
+<code class="docutils literal notranslate"><span class="pre">estimates.C</span></code>. - <code class="docutils literal notranslate"><span class="pre">estimates.F_dff</span></code>: Set of DF/F normalized temporal
+components. Saved as a numpy array with dimensions (# of components X #
+of timesteps). Each row corresponds to the DF/F fluorescence for the
+corresponding component.</p>
+<p>To view the spatial components, their corresponding vectors need first
+to be reshaped into 2d images. For example if you want to view the i-th
+component you can type</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">();</span> <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">estimates</span><span class="o">.</span><span class="n">A</span><span class="p">[:,</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">toarray</span><span class="p">(),</span> <span class="n">dims</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="s1">&#39;F&#39;</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">dims</span></code> is a list or tuple that has the dimensions of the FOV.
+Similarly if you want to plot the trace for the i-th component you can
+simply type</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">();</span> <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">estimates</span><span class="o">.</span><span class="n">V</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>The methods <code class="docutils literal notranslate"><span class="pre">estimates.plot_contours</span></code> and
+<code class="docutils literal notranslate"><span class="pre">estimates.view_components</span></code> can be used to visualize all the
+components.</p>
+</div>
+<div class="section" id="variables-for-component-evaluation">
+<h2>Variables for component evaluation<a class="headerlink" href="#variables-for-component-evaluation" title="Permalink to this headline">¶</a></h2>
+<p>If you use post-screening to evaluate the quality of the components and
+remove bad components the results are stored in the lists: -
+<code class="docutils literal notranslate"><span class="pre">idx_components</span></code>: List containing the indexes of accepted components.
+- <code class="docutils literal notranslate"><span class="pre">idx_components_bad</span></code>: List containing the indexes of rejected
+components.</p>
+<p>These lists can be used to index the results. For example
+<code class="docutils literal notranslate"><span class="pre">estimates.A[:,idx_components]</span></code> or <code class="docutils literal notranslate"><span class="pre">estimates.C[idx_components]</span></code>
+will return the accepted spatial or temporal components, respectively.
+If you want to view the first accepted component you can type</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">();</span> <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">estimates</span><span class="o">.</span><span class="n">A</span><span class="p">[:,</span><span class="n">idx_components</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span><span class="o">.</span><span class="n">toarray</span><span class="p">(),</span> <span class="n">dims</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="s1">&#39;F&#39;</span><span class="p">))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">();</span> <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">cnm</span><span class="o">.</span><span class="n">estimates</span><span class="o">.</span><span class="n">C</span><span class="p">[</span><span class="n">idx_components</span><span class="p">[</span><span class="mi">0</span><span class="p">]])</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="variables-for-1p-processing-cnmf-e">
+<h2>Variables for 1p processing (CNMF-E)<a class="headerlink" href="#variables-for-1p-processing-cnmf-e" title="Permalink to this headline">¶</a></h2>
+<p>The variables for one photon processing are the same, with an additional
+variable <code class="docutils literal notranslate"><span class="pre">estimates.W</span></code> for the matrix that is used to compute the
+background using the ring model, and <code class="docutils literal notranslate"><span class="pre">estimates.b0</span></code> for the baseline
+value for each pixel.</p>
+</div>
+<div class="section" id="variables-for-online-processing">
+<h2>Variables for online processing<a class="headerlink" href="#variables-for-online-processing" title="Permalink to this headline">¶</a></h2>
+<p>The same <code class="docutils literal notranslate"><span class="pre">estimates</span></code> object is also used for the results of online
+processing, stored in <code class="docutils literal notranslate"><span class="pre">onacid.estimates</span></code>.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Demos</a></li>
+<li><a class="reference internal" href="#basic-structure">Basic Structure</a></li>
+<li><a class="reference internal" href="#result-interpretation">Result Interpretation</a><ul>
+<li><a class="reference internal" href="#result-variables-for-2p-batch-analysis">Result variables for 2p batch analysis</a></li>
+<li><a class="reference internal" href="#variables-for-component-evaluation">Variables for component evaluation</a></li>
+<li><a class="reference internal" href="#variables-for-1p-processing-cnmf-e">Variables for 1p processing (CNMF-E)</a></li>
+<li><a class="reference internal" href="#variables-for-online-processing">Variables for online processing</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="Overview.html"
+                        title="previous chapter">Overview</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="core_functions.html"
+                        title="next chapter">Core Functions</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/Getting_Started.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="core_functions.html" title="Core Functions"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="Overview.html" title="Overview"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">CaImAn 1.0.0 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2018, Eftychios Pnevmatikakis and Andrea Giovannucci.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.4.
+    </div>
+  </body>
+</html>
