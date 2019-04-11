@@ -76,11 +76,14 @@
 <tr class="row-even"><td><a class="reference internal" href="#caiman.base.movies.movie.play" title="caiman.base.movies.movie.play"><code class="xref py py-obj docutils literal notranslate"><span class="pre">caiman.base.movies.movie.play</span></code></a>([gain,&nbsp;fr,&nbsp;…])</td>
 <td>Play the movie using opencv</td>
 </tr>
-<tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">caiman.base.rois.register_ROIs</span></code>(A1,&nbsp;A2,&nbsp;dims)</td>
+<tr class="row-odd"><td><a class="reference internal" href="#caiman.base.rois.register_ROIs" title="caiman.base.rois.register_ROIs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">caiman.base.rois.register_ROIs</span></code></a>(A1,&nbsp;A2,&nbsp;dims)</td>
 <td>Register ROIs across different sessions using an intersection over union  metric and the Hungarian algorithm for optimal matching</td>
 </tr>
-<tr class="row-even"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">caiman.base.rois.register_multisession</span></code>(A,&nbsp;dims)</td>
+<tr class="row-even"><td><a class="reference internal" href="#caiman.base.rois.register_multisession" title="caiman.base.rois.register_multisession"><code class="xref py py-obj docutils literal notranslate"><span class="pre">caiman.base.rois.register_multisession</span></code></a>(A,&nbsp;dims)</td>
 <td>Register ROIs across multiple sessions using an intersection over union metric and the Hungarian algorithm for optimal matching.</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#caiman.source_extraction.cnmf.utilities.detrend_df_f" title="caiman.source_extraction.cnmf.utilities.detrend_df_f"><code class="xref py py-obj docutils literal notranslate"><span class="pre">caiman.source_extraction.cnmf.utilities.detrend_df_f</span></code></a>(A,&nbsp;…)</td>
+<td>Compute DF/F signal without using the original data.</td>
 </tr>
 </tbody>
 </table>
@@ -404,8 +407,8 @@ m=movie(input_arr, start_time=0,fr=33);</dd>
 </table>
 <table border="1" class="docutils">
 <colgroup>
-<col width="74%" />
-<col width="26%" />
+<col width="70%" />
+<col width="30%" />
 </colgroup>
 <tbody valign="top">
 <tr class="row-odd"><td><strong>apply_shifts_online</strong></td>
@@ -414,13 +417,10 @@ m=movie(input_arr, start_time=0,fr=33);</dd>
 <tr class="row-even"><td><strong>calc_min</strong></td>
 <td>&#160;</td>
 </tr>
-<tr class="row-odd"><td><strong>motion_correction_online</strong></td>
+<tr class="row-odd"><td><strong>resample</strong></td>
 <td>&#160;</td>
 </tr>
-<tr class="row-even"><td><strong>resample</strong></td>
-<td>&#160;</td>
-</tr>
-<tr class="row-odd"><td><strong>to_2D</strong></td>
+<tr class="row-even"><td><strong>to_2D</strong></td>
 <td>&#160;</td>
 </tr>
 </tbody>
@@ -876,7 +876,7 @@ and then the intermediate values are interpolated.</p>
 
 <dl class="method">
 <dt id="caiman.base.timeseries.timeseries.save">
-<code class="descclassname">timeseries.</code><code class="descname">save</code><span class="sig-paren">(</span><em>file_name</em>, <em>to32=True</em>, <em>order='F'</em>, <em>imagej=False</em>, <em>bigtiff=True</em>, <em>software='CaImAn'</em>, <em>compress=0</em><span class="sig-paren">)</span><a class="headerlink" href="#caiman.base.timeseries.timeseries.save" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">timeseries.</code><code class="descname">save</code><span class="sig-paren">(</span><em>file_name</em>, <em>to32=True</em>, <em>order='F'</em>, <em>imagej=False</em>, <em>bigtiff=True</em>, <em>software='CaImAn'</em>, <em>compress=0</em>, <em>var_name_hdf5='mov'</em><span class="sig-paren">)</span><a class="headerlink" href="#caiman.base.timeseries.timeseries.save" title="Permalink to this definition">¶</a></dt>
 <dd><p>Save the timeseries in various formats</p>
 <dl class="docutils">
 <dt>Args:</dt>
@@ -887,6 +887,8 @@ and then the intermediate values are interpolated.</p>
 <dd>whether to transform to 32 bits</dd>
 <dt>order: ‘F’ or ‘C’</dt>
 <dd>C or Fortran order</dd>
+<dt>var_name_hdf5: str</dt>
+<dd>Name of hdf5 file subdirectory</dd>
 </dl>
 </dd>
 <dt>Raises:</dt>
@@ -907,62 +909,167 @@ and then the intermediate values are interpolated.</p>
 </div>
 <div class="section" id="rois">
 <h2>ROIs<a class="headerlink" href="#rois" title="Permalink to this headline">¶</a></h2>
-</div>
-<div class="section" id="parallel-processing-functions">
-<h2>Parallel Processing functions<a class="headerlink" href="#parallel-processing-functions" title="Permalink to this headline">¶</a></h2>
 <dl class="function">
-<dt id="caiman.cluster.apply_to_patch">
-<code class="descclassname">caiman.cluster.</code><code class="descname">apply_to_patch</code><span class="sig-paren">(</span><em>mmap_file</em>, <em>shape</em>, <em>dview</em>, <em>rf</em>, <em>stride</em>, <em>function</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#caiman.cluster.apply_to_patch" title="Permalink to this definition">¶</a></dt>
-<dd><p>apply function to patches in parallel or not</p>
+<dt id="caiman.base.rois.register_ROIs">
+<code class="descclassname">caiman.base.rois.</code><code class="descname">register_ROIs</code><span class="sig-paren">(</span><em>A1</em>, <em>A2</em>, <em>dims</em>, <em>template1=None</em>, <em>template2=None</em>, <em>align_flag=True</em>, <em>D=None</em>, <em>max_thr=0</em>, <em>use_opt_flow=True</em>, <em>thresh_cost=0.7</em>, <em>max_dist=10</em>, <em>enclosed_thr=None</em>, <em>print_assignment=False</em>, <em>plot_results=False</em>, <em>Cn=None</em>, <em>cmap='viridis'</em><span class="sig-paren">)</span><a class="headerlink" href="#caiman.base.rois.register_ROIs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Register ROIs across different sessions using an intersection over union 
+metric and the Hungarian algorithm for optimal matching</p>
 <dl class="docutils">
 <dt>Args:</dt>
 <dd><dl class="first last docutils">
-<dt>file_name: string</dt>
-<dd>full path to an npy file (2D, pixels x time) containing the movie</dd>
-<dt>shape: tuple of three elements</dt>
-<dd>dimensions of the original movie across y, x, and time</dd>
-<dt>rf: int</dt>
-<dd>half-size of the square patch in pixel</dd>
-<dt>stride: int</dt>
-<dd>amount of overlap between patches</dd>
-<dt>dview: ipyparallel view on client</dt>
-<dd>if None</dd>
+<dt>A1: ndarray or csc_matrix  # pixels x # of components</dt>
+<dd>ROIs from session 1</dd>
+<dt>A2: ndarray or csc_matrix  # pixels x # of components</dt>
+<dd>ROIs from session 2</dd>
+<dt>dims: list or tuple</dt>
+<dd>dimensionality of the FOV</dd>
+<dt>template1: ndarray dims</dt>
+<dd>template from session 1</dd>
+<dt>template2: ndarray dims</dt>
+<dd>template from session 2</dd>
+<dt>align_flag: bool</dt>
+<dd>align the templates before matching</dd>
+<dt>D: ndarray</dt>
+<dd>matrix of distances in the event they are pre-computed</dd>
+<dt>max_thr: scalar</dt>
+<dd>max threshold parameter before binarization</dd>
+<dt>use_opt_flow: bool</dt>
+<dd>use dense optical flow to align templates</dd>
+<dt>thresh_cost: scalar</dt>
+<dd>maximum distance considered</dd>
+<dt>max_dist: scalar</dt>
+<dd>max distance between centroids</dd>
+<dt>enclosed_thr: float</dt>
+<dd>if not None set distance to at most the specified value when ground 
+truth is a subset of inferred</dd>
+<dt>print_assignment: bool</dt>
+<dd>print pairs of matched ROIs</dd>
+<dt>plot_results: bool</dt>
+<dd>create a plot of matches and mismatches</dd>
+<dt>Cn: ndarray</dt>
+<dd>background image for plotting purposes</dd>
+<dt>cmap: string</dt>
+<dd>colormap for background image</dd>
 </dl>
 </dd>
 <dt>Returns:</dt>
-<dd>results</dd>
-<dt>Raises:</dt>
-<dd>Exception ‘Something went wrong’</dd>
-</dl>
-</dd></dl>
-
-<dl class="function">
-<dt id="caiman.cluster.start_server">
-<code class="descclassname">caiman.cluster.</code><code class="descname">start_server</code><span class="sig-paren">(</span><em>slurm_script=None</em>, <em>ipcluster='ipcluster'</em>, <em>ncpus=None</em><span class="sig-paren">)</span><a class="headerlink" href="#caiman.cluster.start_server" title="Permalink to this definition">¶</a></dt>
-<dd><p>programmatically start the ipyparallel server</p>
-<dl class="docutils">
-<dt>Args:</dt>
 <dd><dl class="first last docutils">
-<dt>ncpus: int</dt>
-<dd>number of processors</dd>
-<dt>ipcluster <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
-<dd>ipcluster binary file name; requires 4 path separators on Windows. ipcluster=”C:\Anaconda2\Scripts\ipcluster.exe”
-Default: “ipcluster”</dd>
+<dt>matched_ROIs1: list</dt>
+<dd>indeces of matched ROIs from session 1</dd>
+<dt>matched_ROIs2: list</dt>
+<dd>indeces of matched ROIs from session 2</dd>
+<dt>non_matched1: list</dt>
+<dd>indeces of non-matched ROIs from session 1</dd>
+<dt>non_matched2: list</dt>
+<dd>indeces of non-matched ROIs from session 2</dd>
+<dt>performance:  list</dt>
+<dd>(precision, recall, accuracy, f_1 score) with A1 taken as ground truth</dd>
+<dt>A2: csc_matrix  # pixels x # of components</dt>
+<dd>ROIs from session 2 aligned to session 1</dd>
 </dl>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="function">
-<dt id="caiman.cluster.stop_server">
-<code class="descclassname">caiman.cluster.</code><code class="descname">stop_server</code><span class="sig-paren">(</span><em>ipcluster='ipcluster'</em>, <em>pdir=None</em>, <em>profile=None</em>, <em>dview=None</em><span class="sig-paren">)</span><a class="headerlink" href="#caiman.cluster.stop_server" title="Permalink to this definition">¶</a></dt>
-<dd><p>programmatically stops the ipyparallel server</p>
+<dt id="caiman.base.rois.register_multisession">
+<code class="descclassname">caiman.base.rois.</code><code class="descname">register_multisession</code><span class="sig-paren">(</span><em>A, dims, templates=[None], align_flag=True, max_thr=0, use_opt_flow=True, thresh_cost=0.7, max_dist=10, enclosed_thr=None</em><span class="sig-paren">)</span><a class="headerlink" href="#caiman.base.rois.register_multisession" title="Permalink to this definition">¶</a></dt>
+<dd><p>Register ROIs across multiple sessions using an intersection over union metric
+and the Hungarian algorithm for optimal matching. Registration occurs by 
+aligning session 1 to session 2, keeping the union of the matched and 
+non-matched components to register with session 3 and so on.</p>
 <dl class="docutils">
 <dt>Args:</dt>
 <dd><dl class="first last docutils">
-<dt>ipcluster <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
-<dd>ipcluster binary file name; requires 4 path separators on Windows
-Default: “ipcluster”</dd>
+<dt>A: list of ndarray or csc_matrix matrices # pixels x # of components</dt>
+<dd>ROIs from each session</dd>
+<dt>dims: list or tuple</dt>
+<dd>dimensionality of the FOV</dd>
+<dt>template: list of ndarray matrices of size dims</dt>
+<dd>templates from each session</dd>
+<dt>align_flag: bool</dt>
+<dd>align the templates before matching</dd>
+<dt>max_thr: scalar</dt>
+<dd>max threshold parameter before binarization</dd>
+<dt>use_opt_flow: bool</dt>
+<dd>use dense optical flow to align templates</dd>
+<dt>thresh_cost: scalar</dt>
+<dd>maximum distance considered</dd>
+<dt>max_dist: scalar</dt>
+<dd>max distance between centroids</dd>
+<dt>enclosed_thr: float</dt>
+<dd>if not None set distance to at most the specified value when ground 
+truth is a subset of inferred</dd>
+</dl>
+</dd>
+<dt>Returns:</dt>
+<dd><dl class="first last docutils">
+<dt>A_union: csc_matrix # pixels x # of total distinct components</dt>
+<dd>union of all kept ROIs</dd>
+<dt>assignments: ndarray int of size # of total distinct components x # sessions</dt>
+<dd>element [i,j] = k if component k from session j is mapped to component
+i in the A_union matrix. If there is no much the value is NaN</dd>
+<dt>matchings: list of lists</dt>
+<dd>matchings[i][j] = k means that component j from session i is represented
+by component k in A_union</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="caiman.base.rois.com">
+<code class="descclassname">caiman.base.rois.</code><code class="descname">com</code><span class="sig-paren">(</span><em>A</em>, <em>d1</em>, <em>d2</em>, <em>d3=None</em><span class="sig-paren">)</span><a class="headerlink" href="#caiman.base.rois.com" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculation of the center of mass for spatial components</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><dl class="first last docutils">
+<dt>A:   np.ndarray</dt>
+<dd>matrix of spatial components (d x K)</dd>
+<dt>d1:  int</dt>
+<dd>number of pixels in x-direction</dd>
+<dt>d2:  int</dt>
+<dd>number of pixels in y-direction</dd>
+<dt>d3:  int</dt>
+<dd>number of pixels in z-direction</dd>
+</dl>
+</dd>
+<dt>Returns:</dt>
+<dd><dl class="first last docutils">
+<dt>cm:  np.ndarray</dt>
+<dd>center of mass for spatial components (K x 2 or 3)</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="caiman.base.rois.extract_binary_masks_from_structural_channel">
+<code class="descclassname">caiman.base.rois.</code><code class="descname">extract_binary_masks_from_structural_channel</code><span class="sig-paren">(</span><em>Y, min_area_size=30, min_hole_size=15, gSig=5, expand_method='closing', selem=array([[1., 1., 1.],        [1., 1., 1.],        [1., 1., 1.]])</em><span class="sig-paren">)</span><a class="headerlink" href="#caiman.base.rois.extract_binary_masks_from_structural_channel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extract binary masks by using adaptive thresholding on a structural channel</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><dl class="first last docutils">
+<dt>Y:                  caiman movie object</dt>
+<dd>movie of the structural channel (assumed motion corrected)</dd>
+<dt>min_area_size:      int</dt>
+<dd>ignore components with smaller size</dd>
+<dt>min_hole_size:      int</dt>
+<dd>fill in holes up to that size (donuts)</dd>
+<dt>gSig:               int</dt>
+<dd>average radius of cell</dd>
+<dt>expand_method:      string</dt>
+<dd>method to expand binary masks (morphological closing or dilation)</dd>
+<dt>selem:              np.array</dt>
+<dd>morphological element with which to expand binary masks</dd>
+</dl>
+</dd>
+<dt>Returns:</dt>
+<dd><dl class="first last docutils">
+<dt>A:                  sparse column format matrix</dt>
+<dd>matrix of binary masks to be used for CNMF seeding</dd>
+<dt>mR:                 np.array</dt>
+<dd>mean image used to detect cell boundaries</dd>
 </dl>
 </dd>
 </dl>
@@ -973,7 +1080,7 @@ Default: “ipcluster”</dd>
 <h2>Memory mapping<a class="headerlink" href="#memory-mapping" title="Permalink to this headline">¶</a></h2>
 <dl class="function">
 <dt id="caiman.mmapping.load_memmap">
-<code class="descclassname">caiman.mmapping.</code><code class="descname">load_memmap</code><span class="sig-paren">(</span><em>filename</em>, <em>mode='r'</em><span class="sig-paren">)</span><a class="headerlink" href="#caiman.mmapping.load_memmap" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">caiman.mmapping.</code><code class="descname">load_memmap</code><span class="sig-paren">(</span><em>filename: str</em>, <em>mode: str = 'r'</em><span class="sig-paren">)</span> &#x2192; Union[Tuple[Any, Tuple[int, int], int], Tuple[Any, Tuple[int, int, int], int]]<a class="headerlink" href="#caiman.mmapping.load_memmap" title="Permalink to this definition">¶</a></dt>
 <dd><p>Load a memory mapped file created by the function save_memmap</p>
 <dl class="docutils">
 <dt>Args:</dt>
@@ -1001,21 +1108,22 @@ Default: “ipcluster”</dd>
 
 <dl class="function">
 <dt id="caiman.mmapping.save_memmap_join">
-<code class="descclassname">caiman.mmapping.</code><code class="descname">save_memmap_join</code><span class="sig-paren">(</span><em>mmap_fnames</em>, <em>base_name=None</em>, <em>n_chunks=20</em>, <em>dview=None</em>, <em>add_to_mov=0</em><span class="sig-paren">)</span><a class="headerlink" href="#caiman.mmapping.save_memmap_join" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">caiman.mmapping.</code><code class="descname">save_memmap_join</code><span class="sig-paren">(</span><em>mmap_fnames: List[str], base_name: str = None, n_chunks: int = 20, dview=None, add_to_mov=0</em><span class="sig-paren">)</span> &#x2192; str<a class="headerlink" href="#caiman.mmapping.save_memmap_join" title="Permalink to this definition">¶</a></dt>
 <dd><p>Makes a large file memmap from a number of smaller files</p>
 <dl class="docutils">
 <dt>Args:</dt>
 <dd><p class="first">mmap_fnames: list of memory mapped files</p>
 <p>base_name: string, will be the first portion of name to be solved</p>
 <p>n_chunks: number of chunks in which to subdivide when saving, smaller requires more memory</p>
-<p class="last">dview: cluster handle</p>
+<p>dview: cluster handle</p>
+<p class="last">add_to_mov: (undocumented)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="caiman.mmapping.save_memmap">
-<code class="descclassname">caiman.mmapping.</code><code class="descname">save_memmap</code><span class="sig-paren">(</span><em>filenames</em>, <em>base_name='Yr'</em>, <em>resize_fact=(1</em>, <em>1</em>, <em>1)</em>, <em>remove_init=0</em>, <em>idx_xy=None</em>, <em>order='F'</em>, <em>xy_shifts=None</em>, <em>is_3D=False</em>, <em>add_to_movie=0</em>, <em>border_to_0=0</em>, <em>dview=None</em>, <em>n_chunks=100</em>, <em>slices=None</em><span class="sig-paren">)</span><a class="headerlink" href="#caiman.mmapping.save_memmap" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">caiman.mmapping.</code><code class="descname">save_memmap</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#caiman.mmapping.save_memmap" title="Permalink to this definition">¶</a></dt>
 <dd><p>Efficiently write data from a list of tif files into a memory mappable file</p>
 <dl class="docutils">
 <dt>Args:</dt>
@@ -1150,7 +1258,7 @@ data</dd>
 <h2>Motion Correction<a class="headerlink" href="#motion-correction" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="caiman.motion_correction.MotionCorrect">
-<em class="property">class </em><code class="descclassname">caiman.motion_correction.</code><code class="descname">MotionCorrect</code><span class="sig-paren">(</span><em>fname, min_mov=None, dview=None, max_shifts=(6, 6), niter_rig=1, splits_rig=14, num_splits_to_process_rig=None, strides=(96, 96), overlaps=(32, 32), splits_els=14, num_splits_to_process_els=[7, None], upsample_factor_grid=4, max_deviation_rigid=3, shifts_opencv=True, nonneg_movie=True, gSig_filt=None, use_cuda=False, border_nan=True, pw_rigid=False, num_frames_split=80</em><span class="sig-paren">)</span><a class="headerlink" href="#caiman.motion_correction.MotionCorrect" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">caiman.motion_correction.</code><code class="descname">MotionCorrect</code><span class="sig-paren">(</span><em>fname, min_mov=None, dview=None, max_shifts=(6, 6), niter_rig=1, splits_rig=14, num_splits_to_process_rig=None, strides=(96, 96), overlaps=(32, 32), splits_els=14, num_splits_to_process_els=[7, None], upsample_factor_grid=4, max_deviation_rigid=3, shifts_opencv=True, nonneg_movie=True, gSig_filt=None, use_cuda=False, border_nan=True, pw_rigid=False, num_frames_split=80, var_name_hdf5='mov'</em><span class="sig-paren">)</span><a class="headerlink" href="#caiman.motion_correction.MotionCorrect" title="Permalink to this definition">¶</a></dt>
 <dd><p>class implementing motion correction operations</p>
 <p class="rubric">Methods</p>
 <table border="1" class="longtable docutils">
@@ -1942,7 +2050,7 @@ Friedrich J, Zhou P, and Paninski L, arXiv 2016</dd>
 <h2>Parameter Setting<a class="headerlink" href="#parameter-setting" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="caiman.source_extraction.cnmf.params.CNMFParams">
-<em class="property">class </em><code class="descclassname">caiman.source_extraction.cnmf.params.</code><code class="descname">CNMFParams</code><span class="sig-paren">(</span><em>fnames=None, dims=None, dxy=(1, 1), border_pix=0, del_duplicates=False, low_rank_background=True, memory_fact=1, n_processes=1, nb_patch=1, p_ssub=2, p_tsub=2, remove_very_bad_comps=False, rf=None, stride=None, check_nan=True, n_pixels_per_process=None, k=30, alpha_snmf=1000.0, center_psf=False, gSig=[5, 5], gSiz=None, init_iter=2, method_init='greedy_roi', min_corr=0.85, min_pnr=20, gnb=1, normalize_init=True, options_local_NMF=None, ring_size_factor=1.5, rolling_length=100, rolling_sum=True, ssub=2, ssub_B=2, tsub=2, block_size_spat=5000, num_blocks_per_run_spat=20, block_size_temp=5000, num_blocks_per_run_temp=20, update_background_components=True, method_deconvolution='oasis', p=2, s_min=None, do_merge=True, merge_thresh=0.8, decay_time=0.4, fr=30, min_SNR=2.5, rval_thr=0.8, N_samples_exceptionality=None, batch_update_suff_stat=False, expected_comps=500, iters_shape=5, max_comp_update_shape=inf, max_num_added=5, min_num_trial=5, minibatch_shape=100, minibatch_suff_stat=5, n_refit=0, num_times_comp_updated=inf, simultaneously=False, sniper_mode=False, test_both=False, thresh_CNN_noisy=0.5, thresh_fitness_delta=-50, thresh_fitness_raw=None, thresh_overlap=0.5, update_freq=200, update_num_comps=True, use_dense=True, use_peak_max=True, only_init_patch=True, params_dict={}</em><span class="sig-paren">)</span><a class="headerlink" href="#caiman.source_extraction.cnmf.params.CNMFParams" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">caiman.source_extraction.cnmf.params.</code><code class="descname">CNMFParams</code><span class="sig-paren">(</span><em>fnames=None, dims=None, dxy=(1, 1), border_pix=0, del_duplicates=False, low_rank_background=True, memory_fact=1, n_processes=1, nb_patch=1, p_ssub=2, p_tsub=2, remove_very_bad_comps=False, rf=None, stride=None, check_nan=True, n_pixels_per_process=None, k=30, alpha_snmf=1000.0, center_psf=False, gSig=[5, 5], gSiz=None, init_iter=2, method_init='greedy_roi', min_corr=0.85, min_pnr=20, gnb=1, normalize_init=True, options_local_NMF=None, ring_size_factor=1.5, rolling_length=100, rolling_sum=True, ssub=2, ssub_B=2, tsub=2, block_size_spat=5000, num_blocks_per_run_spat=20, block_size_temp=5000, num_blocks_per_run_temp=20, update_background_components=True, method_deconvolution='oasis', p=2, s_min=None, do_merge=True, merge_thresh=0.8, decay_time=0.4, fr=30, min_SNR=2.5, rval_thr=0.8, N_samples_exceptionality=None, batch_update_suff_stat=False, expected_comps=500, iters_shape=5, max_comp_update_shape=inf, max_num_added=5, min_num_trial=5, minibatch_shape=100, minibatch_suff_stat=5, n_refit=0, num_times_comp_updated=inf, simultaneously=False, sniper_mode=False, test_both=False, thresh_CNN_noisy=0.5, thresh_fitness_delta=-50, thresh_fitness_raw=None, thresh_overlap=0.5, update_freq=200, update_num_comps=True, use_dense=True, use_peak_max=True, only_init_patch=True, var_name_hdf5='mov', params_dict={}</em><span class="sig-paren">)</span><a class="headerlink" href="#caiman.source_extraction.cnmf.params.CNMFParams" title="Permalink to this definition">¶</a></dt>
 <dd><p class="rubric">Methods</p>
 <table border="1" class="longtable docutils">
 <colgroup>
@@ -2047,8 +2155,8 @@ you can find out more at how the functions are called and how they are laid out 
 <tr class="row-even"><td><a class="reference internal" href="#caiman.source_extraction.cnmf.cnmf.CNMF.HALS4traces" title="caiman.source_extraction.cnmf.cnmf.CNMF.HALS4traces"><code class="xref py py-obj docutils literal notranslate"><span class="pre">HALS4traces</span></code></a>(Yr[,&nbsp;groups,&nbsp;use_groups,&nbsp;order,&nbsp;…])</td>
 <td>Solves C, f = argmin_C ||Yr-AC-bf|| using block-coordinate decent.</td>
 </tr>
-<tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_residuals</span></code>(Yr)</td>
-<td>compute residual for each component (variable YrA)</td>
+<tr class="row-odd"><td><a class="reference internal" href="#caiman.source_extraction.cnmf.cnmf.CNMF.compute_residuals" title="caiman.source_extraction.cnmf.cnmf.CNMF.compute_residuals"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_residuals</span></code></a>(Yr)</td>
+<td>Compute residual trace for each component (variable YrA).</td>
 </tr>
 <tr class="row-even"><td><a class="reference internal" href="#caiman.source_extraction.cnmf.cnmf.CNMF.deconvolve" title="caiman.source_extraction.cnmf.cnmf.CNMF.deconvolve"><code class="xref py py-obj docutils literal notranslate"><span class="pre">deconvolve</span></code></a>([p,&nbsp;method_deconvolution,&nbsp;…])</td>
 <td>Performs deconvolution on already extracted traces using constrained foopsi.</td>
@@ -2056,17 +2164,23 @@ you can find out more at how the functions are called and how they are laid out 
 <tr class="row-odd"><td><a class="reference internal" href="#caiman.source_extraction.cnmf.cnmf.CNMF.fit" title="caiman.source_extraction.cnmf.cnmf.CNMF.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(images[,&nbsp;indeces])</td>
 <td>This method uses the cnmf algorithm to find sources in data.</td>
 </tr>
-<tr class="row-even"><td><a class="reference internal" href="#caiman.source_extraction.cnmf.cnmf.CNMF.initialize" title="caiman.source_extraction.cnmf.cnmf.CNMF.initialize"><code class="xref py py-obj docutils literal notranslate"><span class="pre">initialize</span></code></a>(Y,&nbsp;**kwargs)</td>
+<tr class="row-even"><td><a class="reference internal" href="#caiman.source_extraction.cnmf.cnmf.CNMF.fit_file" title="caiman.source_extraction.cnmf.cnmf.CNMF.fit_file"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_file</span></code></a>([motion_correct,&nbsp;indeces])</td>
+<td>This method packages the analysis pipeline (motion correction, memory mapping, patch based CNMF processing) in a single method that can be called on a specific (sequence of) file(s).</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#caiman.source_extraction.cnmf.cnmf.CNMF.initialize" title="caiman.source_extraction.cnmf.cnmf.CNMF.initialize"><code class="xref py py-obj docutils literal notranslate"><span class="pre">initialize</span></code></a>(Y,&nbsp;**kwargs)</td>
 <td>Component initialization</td>
 </tr>
-<tr class="row-odd"><td><a class="reference internal" href="#caiman.source_extraction.cnmf.cnmf.CNMF.merge_comps" title="caiman.source_extraction.cnmf.cnmf.CNMF.merge_comps"><code class="xref py py-obj docutils literal notranslate"><span class="pre">merge_comps</span></code></a>(Y[,&nbsp;mx,&nbsp;fast_merge])</td>
+<tr class="row-even"><td><a class="reference internal" href="#caiman.source_extraction.cnmf.cnmf.CNMF.merge_comps" title="caiman.source_extraction.cnmf.cnmf.CNMF.merge_comps"><code class="xref py py-obj docutils literal notranslate"><span class="pre">merge_comps</span></code></a>(Y[,&nbsp;mx,&nbsp;fast_merge])</td>
 <td>merges components</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#caiman.source_extraction.cnmf.cnmf.CNMF.preprocess" title="caiman.source_extraction.cnmf.cnmf.CNMF.preprocess"><code class="xref py py-obj docutils literal notranslate"><span class="pre">preprocess</span></code></a>(Yr)</td>
+<td>Examines data to remove corrupted pixels and computes the noise level estimate fo each pixel.</td>
 </tr>
 <tr class="row-even"><td><a class="reference internal" href="#caiman.source_extraction.cnmf.cnmf.CNMF.refit" title="caiman.source_extraction.cnmf.cnmf.CNMF.refit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">refit</span></code></a>(images[,&nbsp;dview])</td>
 <td>Refits the data using CNMF initialized from a previous interation</td>
 </tr>
-<tr class="row-odd"><td><code class="xref py py-obj docutils literal notranslate"><span class="pre">remove_components</span></code>(ind_rm)</td>
-<td>remove a specified list of components from the OnACID CNMF object.</td>
+<tr class="row-odd"><td><a class="reference internal" href="#caiman.source_extraction.cnmf.cnmf.CNMF.remove_components" title="caiman.source_extraction.cnmf.cnmf.CNMF.remove_components"><code class="xref py py-obj docutils literal notranslate"><span class="pre">remove_components</span></code></a>(ind_rm)</td>
+<td>Remove a specified list of components from the CNMF object.</td>
 </tr>
 <tr class="row-even"><td><a class="reference internal" href="#caiman.source_extraction.cnmf.cnmf.CNMF.save" title="caiman.source_extraction.cnmf.cnmf.CNMF.save"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save</span></code></a>(filename)</td>
 <td>save object in hdf5 file format</td>
@@ -2079,27 +2193,13 @@ you can find out more at how the functions are called and how they are laid out 
 </tr>
 </tbody>
 </table>
-<table border="1" class="docutils">
-<colgroup>
-<col width="58%" />
-<col width="42%" />
-</colgroup>
-<tbody valign="top">
-<tr class="row-odd"><td><strong>fit_file</strong></td>
-<td>&#160;</td>
-</tr>
-<tr class="row-even"><td><strong>preprocess</strong></td>
-<td>&#160;</td>
-</tr>
-</tbody>
-</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="caiman.source_extraction.cnmf.cnmf.CNMF.fit">
 <code class="descclassname">CNMF.</code><code class="descname">fit</code><span class="sig-paren">(</span><em>images, indeces=[slice(None, None, None), slice(None, None, None)]</em><span class="sig-paren">)</span><a class="headerlink" href="#caiman.source_extraction.cnmf.cnmf.CNMF.fit" title="Permalink to this definition">¶</a></dt>
-<dd><p>This method uses the cnmf algorithm to find sources in data.</p>
-<p>it is calling everyfunction from the cnmf folder
+<dd><p>This method uses the cnmf algorithm to find sources in data.
+it is calling every function from the cnmf folder
 you can find out more at how the functions are called and how they are laid out at the ipython notebook</p>
 <dl class="docutils">
 <dt>Args:</dt>
@@ -2136,7 +2236,26 @@ dview</dd>
 <dl class="method">
 <dt id="caiman.source_extraction.cnmf.cnmf.CNMF.fit_file">
 <code class="descclassname">CNMF.</code><code class="descname">fit_file</code><span class="sig-paren">(</span><em>motion_correct=False, indeces=[slice(None, None, None), slice(None, None, None)]</em><span class="sig-paren">)</span><a class="headerlink" href="#caiman.source_extraction.cnmf.cnmf.CNMF.fit_file" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>This method packages the analysis pipeline (motion correction, memory
+mapping, patch based CNMF processing) in a single method that can be
+called on a specific (sequence of) file(s). It is assumed that the CNMF
+object already contains a params object where the location of the files
+and all the relevant parameters have been specified. The method does
+not perform the quality evaluation step. Consult demo_pipeline for an
+example.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><dl class="first last docutils">
+<dt>motion_correct (bool)</dt>
+<dd>flag for performing motion correction</dd>
+<dt>indeces (list of slice objects)</dt>
+<dd>perform analysis only on a part of the FOV</dd>
+</dl>
+</dd>
+<dt>Returns:</dt>
+<dd>cnmf object with the current estimates</dd>
+</dl>
+</dd></dl>
 
 <dl class="method">
 <dt id="caiman.source_extraction.cnmf.cnmf.CNMF.save">
@@ -2190,6 +2309,38 @@ constrained foopsi.</p>
 <dd><dl class="first last docutils">
 <dt>Y:  np.array (d1*d2) x T</dt>
 <dd>input data</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="caiman.source_extraction.cnmf.cnmf.CNMF.compute_residuals">
+<code class="descclassname">CNMF.</code><code class="descname">compute_residuals</code><span class="sig-paren">(</span><em>Yr</em><span class="sig-paren">)</span><a class="headerlink" href="#caiman.source_extraction.cnmf.cnmf.CNMF.compute_residuals" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute residual trace for each component (variable YrA).
+WARNING: At the moment this method is valid only for the 2p processing
+pipeline</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>Args:</dt>
+<dd><dl class="first last docutils">
+<dt>Yr <span class="classifier-delimiter">:</span> <span class="classifier">np.ndarray</span></dt>
+<dd>movie in format pixels (d) x frames (T)</dd>
+</dl>
+</dd>
+</dl>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="caiman.source_extraction.cnmf.cnmf.CNMF.remove_components">
+<code class="descclassname">CNMF.</code><code class="descname">remove_components</code><span class="sig-paren">(</span><em>ind_rm</em><span class="sig-paren">)</span><a class="headerlink" href="#caiman.source_extraction.cnmf.cnmf.CNMF.remove_components" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove a specified list of components from the CNMF object.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><dl class="first last docutils">
+<dt>ind_rm <span class="classifier-delimiter">:</span> <span class="classifier">list</span></dt>
+<dd>indeces of components to be removed</dd>
 </dl>
 </dd>
 </dl>
@@ -2259,7 +2410,18 @@ background</p>
 <dl class="method">
 <dt id="caiman.source_extraction.cnmf.cnmf.CNMF.preprocess">
 <code class="descclassname">CNMF.</code><code class="descname">preprocess</code><span class="sig-paren">(</span><em>Yr</em><span class="sig-paren">)</span><a class="headerlink" href="#caiman.source_extraction.cnmf.cnmf.CNMF.preprocess" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Examines data to remove corrupted pixels and computes the noise level
+estimate fo each pixel.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><dl class="first last docutils">
+<dt>Yr: np.array (or memmap.array)</dt>
+<dd>2d array of data (pixels x timesteps) typically in memory
+mapped form</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="function">
 <dt id="caiman.source_extraction.cnmf.cnmf.load_CNMF">
@@ -2832,27 +2994,31 @@ YrA corresponds to the residual trace for each component and is used for faster 
 <div class="section" id="utilities">
 <h2>Utilities<a class="headerlink" href="#utilities" title="Permalink to this headline">¶</a></h2>
 <dl class="function">
-<dt id="caiman.source_extraction.cnmf.utilities.detrend_df_f_auto">
-<code class="descclassname">caiman.source_extraction.cnmf.utilities.</code><code class="descname">detrend_df_f_auto</code><span class="sig-paren">(</span><em>A</em>, <em>b</em>, <em>C</em>, <em>f</em>, <em>dims=None</em>, <em>YrA=None</em>, <em>use_annulus=True</em>, <em>dist1=7</em>, <em>dist2=5</em>, <em>frames_window=1000</em>, <em>use_fast=False</em><span class="sig-paren">)</span><a class="headerlink" href="#caiman.source_extraction.cnmf.utilities.detrend_df_f_auto" title="Permalink to this definition">¶</a></dt>
-<dd><p>Compute DF/F using an automated level of percentile filtering based on
-kernel density estimation.</p>
+<dt id="caiman.source_extraction.cnmf.utilities.detrend_df_f">
+<code class="descclassname">caiman.source_extraction.cnmf.utilities.</code><code class="descname">detrend_df_f</code><span class="sig-paren">(</span><em>A</em>, <em>b</em>, <em>C</em>, <em>f</em>, <em>YrA=None</em>, <em>quantileMin=8</em>, <em>frames_window=500</em>, <em>flag_auto=True</em>, <em>use_fast=False</em><span class="sig-paren">)</span><a class="headerlink" href="#caiman.source_extraction.cnmf.utilities.detrend_df_f" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute DF/F signal without using the original data.
+In general much faster than extract_DF_F</p>
 <dl class="docutils">
 <dt>Args:</dt>
 <dd><dl class="first last docutils">
 <dt>A: scipy.sparse.csc_matrix</dt>
 <dd>spatial components (from cnmf cnm.A)</dd>
 <dt>b: ndarray</dt>
-<dd>spatial backgrounds</dd>
+<dd>spatial background components</dd>
 <dt>C: ndarray</dt>
 <dd>temporal components (from cnmf cnm.C)</dd>
 <dt>f: ndarray</dt>
 <dd>temporal background components</dd>
 <dt>YrA: ndarray</dt>
 <dd>residual signals</dd>
+<dt>quantile_min: float</dt>
+<dd>quantile used to estimate the baseline (values in [0,100])</dd>
 <dt>frames_window: int</dt>
-<dd>number of frames for running quantile</dd>
+<dd>number of frames for computing running quantile</dd>
+<dt>flag_auto: bool</dt>
+<dd>flag for determining quantile automatically</dd>
 <dt>use_fast: bool</dt>
-<dd>flag for using fast approximate percentile filtering</dd>
+<dd>flag for using approximate fast percentile filtering</dd>
 </dl>
 </dd>
 <dt>Returns:</dt>
@@ -2896,8 +3062,92 @@ components by creating a nest of random approximate vertex covers</p>
 
 <dl class="function">
 <dt id="caiman.source_extraction.cnmf.utilities.get_file_size">
-<code class="descclassname">caiman.source_extraction.cnmf.utilities.</code><code class="descname">get_file_size</code><span class="sig-paren">(</span><em>file_name</em>, <em>var_name_hdf5=None</em><span class="sig-paren">)</span><a class="headerlink" href="#caiman.source_extraction.cnmf.utilities.get_file_size" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<code class="descclassname">caiman.source_extraction.cnmf.utilities.</code><code class="descname">get_file_size</code><span class="sig-paren">(</span><em>file_name</em>, <em>var_name_hdf5='mov'</em><span class="sig-paren">)</span><a class="headerlink" href="#caiman.source_extraction.cnmf.utilities.get_file_size" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the dimensions of a file or a list of files without loading
+it/them in memory. An exception is thrown if the files have FOVs with
+different sizes</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>Args:</dt>
+<dd><dl class="first last docutils">
+<dt>file_name: str or list</dt>
+<dd>locations of file(s) in memory</dd>
+<dt>var_name_hdf5: ‘str’</dt>
+<dd>if loading from hdf5 name of the variable to load</dd>
+</dl>
+</dd>
+<dt>Returns:</dt>
+<dd><dl class="first last docutils">
+<dt>dims: list</dt>
+<dd>dimensions of FOV</dd>
+<dt>T: list</dt>
+<dd>number of timesteps in each file</dd>
+</dl>
+</dd>
+</dl>
+</div></blockquote>
+</dd></dl>
+
+</div>
+<div class="section" id="parallel-processing-functions">
+<h2>Parallel Processing functions<a class="headerlink" href="#parallel-processing-functions" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="caiman.cluster.apply_to_patch">
+<code class="descclassname">caiman.cluster.</code><code class="descname">apply_to_patch</code><span class="sig-paren">(</span><em>mmap_file</em>, <em>shape</em>, <em>dview</em>, <em>rf</em>, <em>stride</em>, <em>function</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#caiman.cluster.apply_to_patch" title="Permalink to this definition">¶</a></dt>
+<dd><p>apply function to patches in parallel or not</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><dl class="first last docutils">
+<dt>file_name: string</dt>
+<dd>full path to an npy file (2D, pixels x time) containing the movie</dd>
+<dt>shape: tuple of three elements</dt>
+<dd>dimensions of the original movie across y, x, and time</dd>
+<dt>rf: int</dt>
+<dd>half-size of the square patch in pixel</dd>
+<dt>stride: int</dt>
+<dd>amount of overlap between patches</dd>
+<dt>dview: ipyparallel view on client</dt>
+<dd>if None</dd>
+</dl>
+</dd>
+<dt>Returns:</dt>
+<dd>results</dd>
+<dt>Raises:</dt>
+<dd>Exception ‘Something went wrong’</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="caiman.cluster.start_server">
+<code class="descclassname">caiman.cluster.</code><code class="descname">start_server</code><span class="sig-paren">(</span><em>slurm_script=None</em>, <em>ipcluster='ipcluster'</em>, <em>ncpus=None</em><span class="sig-paren">)</span><a class="headerlink" href="#caiman.cluster.start_server" title="Permalink to this definition">¶</a></dt>
+<dd><p>programmatically start the ipyparallel server</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><dl class="first last docutils">
+<dt>ncpus: int</dt>
+<dd>number of processors</dd>
+<dt>ipcluster <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd>ipcluster binary file name; requires 4 path separators on Windows. ipcluster=”C:\Anaconda2\Scripts\ipcluster.exe”
+Default: “ipcluster”</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="caiman.cluster.stop_server">
+<code class="descclassname">caiman.cluster.</code><code class="descname">stop_server</code><span class="sig-paren">(</span><em>ipcluster='ipcluster'</em>, <em>pdir=None</em>, <em>profile=None</em>, <em>dview=None</em><span class="sig-paren">)</span><a class="headerlink" href="#caiman.cluster.stop_server" title="Permalink to this definition">¶</a></dt>
+<dd><p>programmatically stops the ipyparallel server</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><dl class="first last docutils">
+<dt>ipcluster <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd>ipcluster binary file name; requires 4 path separators on Windows
+Default: “ipcluster”</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
 
 </div>
 </div>
@@ -2914,7 +3164,6 @@ components by creating a nest of random approximate vertex covers</p>
 <li><a class="reference internal" href="#movie-handling">Movie Handling</a></li>
 <li><a class="reference internal" href="#timeseries-handling">Timeseries Handling</a></li>
 <li><a class="reference internal" href="#rois">ROIs</a></li>
-<li><a class="reference internal" href="#parallel-processing-functions">Parallel Processing functions</a></li>
 <li><a class="reference internal" href="#memory-mapping">Memory mapping</a></li>
 <li><a class="reference internal" href="#image-statistics">Image statistics</a></li>
 <li><a class="reference internal" href="#motion-correction">Motion Correction</a></li>
@@ -2929,6 +3178,7 @@ components by creating a nest of random approximate vertex covers</p>
 <li><a class="reference internal" href="#temporal-components">Temporal Components</a></li>
 <li><a class="reference internal" href="#merge-components">Merge components</a></li>
 <li><a class="reference internal" href="#utilities">Utilities</a></li>
+<li><a class="reference internal" href="#parallel-processing-functions">Parallel Processing functions</a></li>
 </ul>
 </li>
 </ul>

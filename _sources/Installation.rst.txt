@@ -19,7 +19,7 @@ The Windows installation process differs more widely from installation
 on Linux or MacOSX and has different issues you may run into.
 
 Process
--------
+~~~~~~~~
 
 -  Increase the maximum size of your pagefile to 64G or more
    (http://www.tomshardware.com/faq/id-2864547/manage-virtual-memory-pagefile-windows.html
@@ -73,7 +73,7 @@ You may then continue the installation.
      cd ..
 
 Setting up a data directory with caimanmanager
-----------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Now that you have stepped out of the caiman source directory, you are
 ready to make a data directory with code samples and datasets. You will
@@ -99,7 +99,7 @@ If you prefer to manage this information somewhere else, the
 caimanmanager tool and other libraries will respect that.
 
 Setting up environment variables
---------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To make the package work *efficiently* and eliminate “crosstalk” between
 different processes, run these commands before launching Python:
@@ -139,7 +139,7 @@ If you want to develop code then replace the last command with
 ``pip install -e .`` If any of these steps gives you errors do not
 proceed to the following step without resolving it
 
-known issues
+Known issues
 ~~~~~~~~~~~~
 
 If you recently upgraded to OSX Mojave you may need to perform the
@@ -155,7 +155,7 @@ and install the package file you will find in the folder that pops up
 .. _setting-up-environment-variables-1:
 
 Setting up environment variables
---------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To make the package work *efficiently* and eliminate “crosstalk” between
 different processes, run these commands before launching Python (this is
@@ -174,7 +174,7 @@ following the instructions
 `here <https://conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#saving-environment-variables>`__.
 
 Setting up caimanmanager
-------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 Once CaImAn is installed, you may want to get a working directory with
 code samples and datasets; pip installed a caimanmanager.py command that
@@ -192,15 +192,16 @@ caiman data directory out of the way (or just remove them if you have no
 precious data) and doing a new data install as per above.
 
 If you prefer to manage this information somewhere else, the
-``CAIMAN_DATA`` environment variable can be set to customise it. The
+``CAIMAN_DATA`` environment variable can be set to customize it. The
 caimanmanager tool and other libraries will respect that.
 
 .. raw:: html
 
    </details>
 
+
 Upgrading
-=========
+-------------
 
 If you already have CaImAn installed with the pip installer (May 2018 or
 later), but want to upgrade, please follow the procedure below. If you
@@ -209,19 +210,19 @@ your Conda environment. In this case you can do only steps 1, 5, and 7
 below to update the code. However, if the environment file has changed
 since your last update this may lead to you not the latest version.
 
-From the conda environment you used to install CaImAn: 
+From the conda environment you used to install CaImAn:
 
-1. ``pip uninstall caiman`` 
+1. ``pip uninstall caiman``
 
-2. remove or rename your ~/caiman_data directory 
+2. remove or rename your ~/caiman_data directory
 
 3. Remove your conda environment: ``conda env remove -n NAME_OF_YOUR_ENVIRONMENT``
 
-4. Close and reopen your shell (to clear out the old conda environment) 
+4. Close and reopen your shell (to clear out the old conda environment)
 
-5. Do a ``git pull`` from inside your CaImAn folder. 
+5. Do a ``git pull`` from inside your CaImAn folder.
 
-6. Recreate and reenter your conda environment as you did in the installation instructions 
+6. Recreate and reenter your conda environment as you did in the installation instructions
 
 7. Do a ``pip install .`` inside that code checkout
 
@@ -241,7 +242,7 @@ From the conda environment you used to install CaImAn:
    you might be able to skip this step.
 
 Installing additional packages
-==============================
+------------------------------
 
 CaImAn uses the conda-forge conda channel for installing its required
 packages. If you want to install new packages into your conda
@@ -253,7 +254,7 @@ environment) as follows:
 ::
 
    conda install -c conda-forge --override-channels NEW_PACKAGE_NAME
-  
+
 You will notice that any packages installed this way will mention, in
 their listing, that they’re from conda-forge, with none of them having a
 blank origin. If you fail to do this, differences between how packages
