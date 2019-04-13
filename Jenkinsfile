@@ -14,17 +14,18 @@ pipeline {
           agent {
             dockerfile {
               dir "test/linux-python3"
-              args '-v /etc/passwd:/etc/passwd -v /etc/group:/etc/group -v /home/jenkins/.conda3/pkgs:/home/jenkins/.conda/pkgs:rw,z'
+              args '-v /etc/passwd:/etc/passwd -v /etc/group:/etc/group'
             }
           }
           environment {
             CONDA_ENV = "${env.WORKSPACE}/test/${env.STAGE_NAME}"
+            HOME = pwd(tmp:true)
           }
           steps {
             sh 'conda clean --index-cache'
             sh 'conda env create -q -f environment.yml -p $CONDA_ENV'
             sh '''#!/bin/bash -ex
-              source $CONDA_ENV/bin/activate $CONDA_ENV
+              source activate $CONDA_ENV
               export KERAS_BACKEND=tensorflow
               pip install .
               TEMPDIR=$(mktemp -d)

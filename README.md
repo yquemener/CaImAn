@@ -28,14 +28,14 @@ A paper explaining most of the implementation details and benchmarking can be fo
 
 ## New: Code refactoring (October 2018)
 
-We recently refactored the code to simplify the parameter setting and usage of the various algorithms. The code now is based revolves around the following objects:
+We recently refactored the code to simplify the parameter setting and usage of the various algorithms. The code now is based around the following objects:
 
 * `params`: A single object containing a set of dictionaries with the parameters used in all the algorithms. It can be set and changed easily and is passed into all the algorithms.
 * `MotionCorrect`: An object for motion correction which can be used for both rigid and piece-wise rigid motion correction.
 * `cnmf`: An object for running the CaImAn batch algorithm either in patches or not, suitable for both two-photon (CNMF) and one-photon (CNMF-E) data.
 * `online_cnmf`: An object for running the CaImAn online (OnACID) algorithm on two-photon data with or without motion correction.
 * `estimates`: A single object that stores the results of the algorithms (CaImAn batch, CaImAn online) in a unified way that also contains plotting methods. For an interpretation of the various entries of the `estimates` object see [here](https://github.com/flatironinstitute/CaImAn/wiki/Interpreting-Results).
-
+   
 To see examples of how these methods are used, please consult the demos. While the `cnmf` methods can also be called in the old way by passing all the parameters when initializing the `cnmf` object, we recommend using the `params` object. Similarly, to run the CaImAn online algorithm it is recommended to pass a `params` object inside the `online_cnmf` object. Older scripts should be usable with the latest version of the code except for online analysis where the `cnmf` object will need to be replaced with an `online_cnmf` object. The results should be read from `estimates`, i.e., `cnm.estimates.C` as opposed to `cnm.C`.
 
 ## Installation for calcium imaging data analysis
@@ -57,10 +57,13 @@ Also, if you want to install new packages into your conda environment for CaImAn
    ```
 You will notice that any packages installed this way will mention, in their listing, that they're from conda-forge, with none of them having a blank origin. If you fail to do this, differences between how packages are built in conda-forge versus the default conda channels may mean that some packages (e.g. OpenCV) stop working despite showing as installed.
 
+### Installation on Windows
+On Windows, please follow the install instructions [here](/INSTALL-windows.md) .
+
 ### Installation on Mac or Linux
 
-   * Download and install Anaconda or Miniconda (Python 3.6 version recommended) <http://docs.continuum.io/anaconda/install>
-
+   * Download and install Anaconda or Miniconda (Python 3.x version) <http://docs.continuum.io/anaconda/install>
+     
    ```bash
    git clone https://github.com/flatironinstitute/CaImAn
    cd CaImAn/
@@ -72,59 +75,57 @@ You will notice that any packages installed this way will mention, in their list
    ```
    pip install -e .
    ```
+   If any of these steps gives you errors do not proceed to the following step without resolving it
 
-**Performance issues:** To make the package work *efficiently* under any configuration ALWAYS run these commands before starting spyder (this is for Linux and OSX but environment variables can be set on Windows as well):
+#### known issues
+    
+With OSX Mojave you will need to perform the following steps before your first install:
+    
+   ```
+   xcode-select --install
+   open /Library/Developer/CommandLineTools/Packages/
+   ```
+
+(install the package file you will find in the folder that pops up)
+
+### Setting up environment variables 
+
+To make the package work *efficiently* and eliminate "crosstalk" between different processes, run these commands before launching Python (this is for Linux and OSX):
 
    ```bash
    export MKL_NUM_THREADS=1
    export OPENBLAS_NUM_THREADS=1
    ```   
-On Windows, replace the word "export" with the word "set" to achieve the same effect.
+The commands should be run every time before launching python. It is recommended that you save these values inside your environment so you don't have to repeat this process every time. You can do this by following the instructions [here](https://conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#saving-environment-variables).
 
 ### Setting up caimanmanager
 
-  Once CaImAn is installed, you may want to get a working directory with code samples and datasets; pip installed a caimanmanager.py command that manages this. If you have not installed Caiman before, you can do
+  Once CaImAn is installed, you may want to get a working directory with code samples and datasets; pip installed a caimanmanager.py command that manages this. If you have not installed Caiman before, you can do 
   ```
   caimanmanager.py install
   ```
-  or
+  or 
   ```
   python caimanmanager.py install --inplace
   ```
-  if you used "pip install -e ."
-
+  if you used "pip install -e ." 
+  
 This will place that directory under your home directory in a directory called caiman_data. If you have, some of the demos or datafiles may have changed since your last install, to follow API changes. You can check to see if they have by doing `caimanmanager.py check`. If they have not, you may keep using them. If they have, we recommend moving your old caiman data directory out of the way (or just remove them if you have no precious data) and doing a new data install as per above.
 
 If you prefer to manage this information somewhere else, the `CAIMAN_DATA` environment variable can be set to customise it. The caimanmanager tool and other libraries will respect that.
 
-### Installation on Windows
-   * Increase the maximum size of your pagefile to 64G or more (http://www.tomshardware.com/faq/id-2864547/manage-virtual-memory-pagefile-windows.html ) - The Windows memmap interface is sensitive to the maximum setting and leaving it at the default can cause errors when processing larger datasets
-   * Download and install Anaconda (Python 3.6 recommended) <http://docs.continuum.io/anaconda/install>. We recommend telling conda to modify your PATH variable (it is a checkbox during Anaconda install, off by default)
-   * Use Conda to install git (With "conda install git") - use of another commandline git is acceptable, but may lead to issues depending on default settings
-   * Microsoft Build Tools for Visual Studio 2017 <https://www.visualstudio.com/downloads/#build-tools-for-visual-studio-2017>. Check the "Build Tools" box, and in the detailed view on the right check the "C/C++ CLI Tools" component too. The specifics of this occasionally change as Microsoft changes its products and website; you may need to go off-script.
-   * As of this writing, there is an upstream versioning issue between scikit and numpy on Windows. If you get a runtime error that skimage/tifffile is compiled against API version 0xc but you have 0xb, you will need to manually upgrade numpy in your conda environment (which may force other version changes).
-
-Use the following menu item to launch a anaconda-enabled command prompt: start>programs>anaconda3>anaconda prompt
-
-   ```bash
-   git clone  https://github.com/flatironinstitute/CaImAn
-   cd CaImAn
-   conda env create -f environment.yml -n caiman
-   conda install -n caiman vs2017_win-64
-   activate caiman
-   pip install . (OR pip install -e . if you want to develop code)
-   copy caimanmanager.py ..
-   conda install numba
-   cd ..
-   ```
-Then run ```caimanmanager``` as described above to make a data directory.
-
-Things that can make your life easier on windows (but which take advanced Conda knowledge):
-   * Finding the keras_activate.bat script for your environment and change the KERAS_BACKEND env var from theano to tensorflow
-   * Remove the vs2015_compiler_vars.bat from your environment setup
 
 Alternative environments:
    * [Using GPU](/README-GPU.md)
+   
+### Known Issues
+
+A list of known issues can be found [here](https://github.com/flatironinstitute/CaImAn/wiki/Known-Issues). If you still encounter problems please open an issue.  
+
+## Documentation & Wiki
+
+Documentation of the code can be found [here](http://flatironinstitute.github.io/CaImAn/). 
+Moreover, our [wiki page](https://github.com/flatironinstitute/CaImAn/wiki) covers some aspects of the code. 
 
 ### Installation for behavioral analysis
 * Installation on Linux (Windows and MacOS are problematic with anaconda at the moment)
@@ -133,54 +134,34 @@ Alternative environments:
 
 ## Demos
 
-* Notebooks: The notebooks provide a simple and friendly way to get into CaImAn and understand its main characteristics.
+* Notebooks: The notebooks provide a simple and friendly way to get into CaImAn and understand its main characteristics. 
 They are located in the `demos/notebooks`. To launch one of the jupyter notebooks:
-
+        
 	```bash
         source activate CaImAn
         jupyter notebook --NotebookApp.iopub_data_rate_limit=1.0e10
 	```
 	and select the notebook from within Jupyter's browser. The argument `--NotebookApp.iopub_data_rate_limit=1.0e10` will prevent any memory issues while plotting on a notebook.
-
+   
 * demo files are also found in the demos/general subfolder. We suggest trying demo_pipeline.py first as it contains most of the tasks required by calcium imaging. For behavior use demo_behavior.py
-
-* If you want to directly launch the python files, your python console still must be in the CaImAn directory.
-
-### Jupyter Notebook Interface (beta version)
-Some data analysis workflows can be done using a web-based graphical user interface using the Jupyter Notebook. The notebook interface is especially useful for users with limited programming experience. The interface is also useful for visually and interactively exploring the results of motion correction and calcium analysis. The notebook interface is currently in beta testing so you may run into bugs, please report them by filing an issue. The interface is under active development; bug fixes and new features will be added periodically.
-
-The notebook interface currently supports the following features of CaImAn:
-* Motion Correction (rigid, non-rigid)
-* CNMF
-* Interactive visual inspection of CNMF results
-* View and download movies and CNMF data
-
-#### Installation
-
-If you have scipy installed or installed the [anaconda python stack](https://www.anaconda.com/download/#macos), then you already have Jupyter installed. If not, you need to [install Jupyter](http://jupyter.org/install) with conda or pip. Jupyter Notebook is a web application that allows you to run Python code directly in a web browser. Since web browsers are supported on all operating systems, the CaImAn web interface should work on any system. The web interface is included in the CaImAn GitHub repository under the nb_interface folder, you simply need to open a terminal, navigate to the folder and start a Jupyter notebook session and open the caiman_interface.ipynb notebook file. See OS specific instructions below.
-
-##### Linux / Mac OSX
- If Jupyter is properly installed on your system and is on your path, you simply need to navigate to the nb_interface folder in the repo (e.g. `cd ~/Desktop/caiman/nb_interface`). You need to have installed CaImAn using the development route by running `pip install -e .` Once in the nb_interface folder, run the command `jupyter notebook caiman_interface.ipynb` and follow the instructions within the notebook.
-
- ##### Windows
-  The easiest way to run the notebook is to [install Anaconda](https://www.anaconda.com/download/#macos), which will install the Anaconda Prompt application. Open Anaconda Prompt from the Start menu. If Jupyter is properly installed on your system and is on your path, you simply need to navigate to the nb_interface folder in the repo. You need to have installed CaImAn using the development route by running `pip install -e .` Once in the nb_interface folder, run the command `jupyter notebook caiman_interface.ipynb` and follow the instructions within the notebook.
-
+   
+* If you want to directly launch the python files, your python console still must be in the CaImAn directory. 
 
 
 ## Testing
 
-* All diffs must be tested before asking for a pull request. Call ```python caimanmanager.py test``` from outside of your CaImAn folder to look for errors (you need to pass the path to the caimanmanager.py file).
-
+* All diffs must be tested before asking for a pull request. Call ```python caimanmanager.py test``` from outside of your CaImAn folder to look for errors (you need to pass the path to the caimanmanager.py file). 
+     
 # Contributors:
 
 * Andrea Giovannucci, **Flatiron Institute, Simons Foundation**
-* Eftychios A. Pnevmatikakis, **Flatiron Institute, Simons Foundation**
+* Eftychios A. Pnevmatikakis, **Flatiron Institute, Simons Foundation** 
 * Johannes Friedrich, **Flatiron Institute, Simons Foundation**
 * Pat Gunn, **Flatiron Institute, Simons Foundation**
 * Erick, Cobos, **Baylor College of Medicine**
 * Valentina Staneva, **University of Washington**
 * Ben Deverett, **Princeton University**
-* Jérémie Kalfon, **University of Kent, ECE paris**
+* Jérémie Kalfon, **University of Kent, ECE paris** 
 * Mike Schachter, **Inscopix**
 * Brandon Brown, **UCSF**
 
@@ -192,15 +173,15 @@ The following references provide the theoretical background and original code fo
 
 ### Software package detailed description and benchmarking
 
-If you use this code please cite the corresponding papers where original methods appeared (see References below), as well as:
+If you use this code please cite the corresponding papers where original methods appeared (see References below), as well as: 
 
-<a name="caiman"></a>[1] Giovannucci A., Friedrich J., Gunn P., Kalfon J., Koay S.A., Taxidis J., Najafi F., Gauthier J.L., Zhou P., Tank D.W., Chklovskii D.B., Pnevmatikakis E.A. (2018). CaImAn: An open source tool for scalable Calcium Imaging data Analysis. bioarXiv preprint. [[paper]](https://doi.org/10.1101/339564)
+<a name="caiman"></a>[1] Giovannucci A., Friedrich J., Gunn P., Kalfon J., Brown, B., Koay S.A., Taxidis J., Najafi F., Gauthier J.L., Zhou P., Baljit, K.S., Tank D.W., Chklovskii D.B., Pnevmatikakis E.A. (2019). CaImAn: An open source tool for scalable Calcium Imaging data Analysis. eLife 8, e38173. [[paper]](https://elifesciences.org/articles/38173)
 
 ### Deconvolution and demixing of calcium imaging data
 
-<a name="neuron"></a>[2] Pnevmatikakis, E.A., Soudry, D., Gao, Y., Machado, T., Merel, J., ... & Paninski, L. (2016). Simultaneous denoising, deconvolution, and demixing of calcium imaging data. Neuron 89(2):285-299, [[paper]](http://dx.doi.org/10.1016/j.neuron.2015.11.037), [[Github repository]](https://github.com/epnev/ca_source_extraction).
+<a name="neuron"></a>[2] Pnevmatikakis, E.A., Soudry, D., Gao, Y., Machado, T., Merel, J., ... & Paninski, L. (2016). Simultaneous denoising, deconvolution, and demixing of calcium imaging data. Neuron 89(2):285-299, [[paper]](http://dx.doi.org/10.1016/j.neuron.2015.11.037), [[Github repository]](https://github.com/epnev/ca_source_extraction). 
 
-<a name="struct"></a>[3] Pnevmatikakis, E.A., Gao, Y., Soudry, D., Pfau, D., Lacefield, C., ... & Paninski, L. (2014). A structured matrix factorization framework for large scale calcium imaging data analysis. arXiv preprint arXiv:1409.2903. [[paper]](http://arxiv.org/abs/1409.2903).
+<a name="struct"></a>[3] Pnevmatikakis, E.A., Gao, Y., Soudry, D., Pfau, D., Lacefield, C., ... & Paninski, L. (2014). A structured matrix factorization framework for large scale calcium imaging data analysis. arXiv preprint arXiv:1409.2903. [[paper]](http://arxiv.org/abs/1409.2903). 
 
 <a name="cnmfe"></a>[4] Zhou, P., Resendez, S. L., Stuber, G. D., Kass, R. E., & Paninski, L. (2016). Efficient and accurate extraction of in vivo calcium signals from microendoscopic video data. arXiv preprint arXiv:1605.07266. [[paper]](https://arxiv.org/abs/1605.07266), [[Github repository]](https://github.com/zhoupc/CNMF_E).
 
@@ -225,21 +206,18 @@ If you use this code please cite the corresponding papers where original methods
 
 ## Related packages
 
-The implementation of this package is developed in parallel with a MATLAB toobox, which can be found [here](https://github.com/epnev/ca_source_extraction).
+The implementation of this package is developed in parallel with a MATLAB toobox, which can be found [here](https://github.com/epnev/ca_source_extraction). 
 
 Some tools that are currently available in Matlab but have been ported to CaImAn are
 
-- [MCMC spike inference](https://github.com/epnev/continuous_time_ca_sampler)
+- [MCMC spike inference](https://github.com/epnev/continuous_time_ca_sampler) 
 - [Group LASSO initialization and spatial CNMF](https://github.com/danielso/ROI_detect)
 
 ## Dependencies
 
 A list of dependencies can be found in the [environment file](https://github.com/flatironinstitute/CaImAn/blob/master/environment.yml).
 
-## Documentation & Wiki
 
-Documentation of the code can be found [here](http://flatironinstitute.github.io/CaImAn/).
-Moreover, our [wiki page](https://github.com/flatironinstitute/CaImAn/wiki) covers some aspects of the code. A list of known issues can be found [here](https://github.com/flatironinstitute/CaImAn/wiki/Known-Issues). If you still encounter problems please open an issue.
 
 ## Questions, comments, issues
 

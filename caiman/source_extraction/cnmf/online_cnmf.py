@@ -195,6 +195,7 @@ class OnACID(object):
             self.params.get('data', 'dims') + (-1,), order='F'), sig=self.params.get('init', 'gSig'), siz=self.params.get('init', 'gSiz'), nDimBlur=len(self.params.get('data', 'dims')))**2
         self.estimates.rho_buf = np.reshape(
             self.estimates.rho_buf, (np.prod(self.params.get('data', 'dims')), -1)).T
+        self.estimates.rho_buf = np.ascontiguousarray(self.estimates.rho_buf)
         self.estimates.rho_buf = RingBuffer(self.estimates.rho_buf, self.params.get('online', 'minibatch_shape'))
         self.estimates.AtA = (self.estimates.Ab.T.dot(self.estimates.Ab)).toarray()
         self.estimates.AtY_buf = self.estimates.Ab.T.dot(self.estimates.Yr_buf.T)
@@ -551,7 +552,7 @@ class OnACID(object):
         fls = self.params.get('data', 'fnames')
         opts = self.params.get_group('online')
         Y = caiman.load(fls[0], subindices=slice(0, opts['init_batch'],
-                 None)).astype(np.float32)
+                 None), var_name_hdf5=self.params.get('data', 'var_name_hdf5')).astype(np.float32)
 
         ds_factor = np.maximum(opts['ds_factor'], 1)
         if ds_factor > 1:
@@ -620,7 +621,7 @@ class OnACID(object):
 
         elif self.params.get('online', 'init_method') == 'seeded':
             self.estimates.A, self.estimates.b, self.estimates.C, self.estimates.f, self.estimates.YrA = seeded_initialization(
-                    Y.transpose(1, 2, 0), self.estimates.A, gnb=self.params.get('init', 'nb'), k=self.params.get('init', 'k'),
+                    Y.transpose(1, 2, 0), self.estimates.A, gnb=self.params.get('init', 'nb'), k=self.params.get('init', 'K'),
                     gSig=self.params.get('init', 'gSig'), return_object=False)
             self.estimates.S = np.zeros_like(self.estimates.C)
             nr = self.estimates.C.shape[0]
@@ -719,7 +720,8 @@ class OnACID(object):
 
             for file_count, ffll in enumerate(process_files):
                 print('Now processing file ' + ffll)
-                Y_ = caiman.load(ffll, subindices=slice(init_batc_iter[file_count], None, None))
+                Y_ = caiman.load(ffll, var_name_hdf5=self.params.get('data', 'var_name_hdf5'), 
+                                 subindices=slice(init_batc_iter[file_count], None, None))
 
                 old_comps = self.N     # number of existing components
                 for frame_count, frame in enumerate(Y_):   # process each file
@@ -814,7 +816,7 @@ class OnACID(object):
         C, f = est.C_on[gnb:self.M, :], est.C_on[:gnb, :]
         # inferred activity due to components (no background)
         frame_plot = (frame_cor.copy() - self.bnd_Y[0])/np.diff(self.bnd_Y)
-        comps_frame = A.dot(C[:, self.t - 1]).reshape(self.dims, order='F')        
+        comps_frame = A.dot(C[:, self.t - 1]).reshape(self.dims, order='F')
         bgkrnd_frame = b.dot(f[:, self.t - 1]).reshape(self.dims, order='F')  # denoised frame (components + background)
         denoised_frame = comps_frame + bgkrnd_frame
         denoised_frame = (denoised_frame.copy() - self.bnd_Y[0])/np.diff(self.bnd_Y)
@@ -968,7 +970,7 @@ def seeded_initialization(Y, Ain, dims=None, init_batch=1000, order_init=None, g
         not_px = np.array(not_px).flatten()
     Yr = np.reshape(Y, (Ain.shape[0], Y.shape[-1]), order='F')
     model = NMF(n_components=gnb, init='nndsvdar', max_iter=10)
-    b_temp = model.fit_transform(np.maximum(Yr[not_px], 0), iter=20)
+    b_temp = model.fit_transform(np.maximum(Yr[not_px], 0))
     f_in = model.components_.squeeze()
     f_in = np.atleast_2d(f_in)
     Y_resf = np.dot(Yr, f_in.T)
@@ -1488,7 +1490,10 @@ def get_candidate_components(sv, dims, Yres_buf, min_num_trial=3, gSig=(5, 5),
         if na:
             ain /= sqrt(na)
             Ain.append(ain)
-            Y_patch.append(Yres_buf.T[indeces, :]) if compute_corr else all_indices.append(indeces)
+            if compute_corr:
+                Y_patch.append(Yres_buf.T[indeces, :])
+            else:
+                all_indices.append(indeces)
             idx.append(ind)
             if sniper_mode:
                 Ain_cnn.append(ain_cnn)

@@ -8,11 +8,13 @@ dependencies:
 - cython
 - future
 - h5py
+- ipykernel=4.10
 - ipython
 - ipyparallel
 - jupyter
 - keras
 - matplotlib
+- mypy
 - nose
 - numpy
 - opencv
