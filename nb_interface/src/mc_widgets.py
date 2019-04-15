@@ -23,8 +23,7 @@ load_files_btn = widgets.Button(
 	description='Load Files',
 	disabled=False,
 	button_style='success', # 'success', 'info', 'warning', 'danger' or ''
-	tooltip='Load Files',
-	icon='check'
+	tooltip='Load Files'
 )
 
 #####

@@ -151,8 +151,10 @@ def wkdir_browser_click(change):
 
 def change_microscopy_type(change):
     if change['new'] == 1:
+        #enable min cor and min snr widgets
         init_method_widget.value = 'corr_pnr'
     elif change['new'] == 2:
+        #disable min cor and min snr widgets
         init_method_widget.value = 'greedy_roi'
 
 def clear_console(change):
@@ -896,7 +898,10 @@ download_btn.on_click(download_data_func)
 #delete_roi_btn.on_click(delete_roi_func)
 is_edit_widget.observe(is_edit_changed, names='value')
 
-#snr = min_snr_edit_widget.observe(update_btn_click, names='value')
+min_snr_event = min_snr_widget.observe(,names='value')
+min_corr_event = min_corr_widget.observe(,names='value')
+#min_snr_edit_widget.observe(update_btn_click, names='value')
+
 #cnn = cnnmin_edit_widget_.observe(update_btn_click, names='value')
 #rval = rvalmin_edit_widget_.observe(update_btn_click, names='value')
 update_edit_btn.on_click(update_btn_click)
