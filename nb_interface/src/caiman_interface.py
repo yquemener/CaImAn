@@ -150,12 +150,22 @@ def wkdir_browser_click(change):
     workingdir_selector.value = change['new'][0]
 
 def change_microscopy_type(change):
-    if change['new'] == 1:
-        #enable min cor and min snr widgets
+    if change['new'] == 1: #one-photon
+        gnb_widget.value = 0
+        #set init method to corr_pnr
         init_method_widget.value = 'corr_pnr'
-    elif change['new'] == 2:
-        #disable min cor and min snr widgets
+    elif change['new'] == 2: #two-photon
+        #set init method to greedy_roi
+        gnb_widget.value = 2
         init_method_widget.value = 'greedy_roi'
+
+def change_init_method(change):
+    if change['new'] == 'corr_pnr':
+        min_corr_widget.disabled = False
+        min_pnr_widget.disabled = False
+    else:
+        min_corr_widget.disabled = True
+        min_pnr_widget.disabled = True
 
 def clear_console(change):
     out.outputs = ()
@@ -409,19 +419,27 @@ def filter_components(reset=False):
     fr_ = float(fr_widget.value)
     decay_time_ = float(decay_time_widget.value)
     if not reset:
-        paramsdict = {'fr': fr_, 'decay_time': decay_time_, 'min_SNR':snr[1], \
-              'SNR_lowest':snr[0], 'rval_thr':rval[1], 'rval_lowest':rval[0], \
-              'use_cnn':True, 'min_cnn_thr':cnn[1], \
-              'cnn_lowest':cnn[0], 'gSig_range':gSig}
+        paramsdict = {'min_SNR':snr[1], \
+              'SNR_lowest':snr[0], 'rval_thr':rval[1], 'rval_lowest':rval[0],\
+                'min_cnn_thr':cnn[1], \
+                'cnn_lowest':cnn[0]}
     else:
         paramsdict={}
     print("A before filter: {}".format(context.cnm.estimates.A.shape))
-    opts = params.CNMFParams(params_dict=paramsdict)
+    #opts = params.CNMFParams(params_dict=paramsdict)
+    #context.cnm.params.set('quality', paramsdict)
     #cnm = context.cnm.filter_components(Yr_reshaped, **params)
     #cmn = context.cnm.estimates.evaluate_components(Yr_reshaped, **params)
     #context.cnm.estimates.evaluate_components(Yr_reshaped, context.cnm.params, dview=context.cnm.dview)
     #context.cnm.params
-    context.cnm.estimates.filter_components(Yr_reshaped, opts, new_dict={}, dview=None)
+    #context.cnm.estimates.filter_components(Yr_reshaped, context.cnm.params, new_dict=paramsdict, dview=None)
+    #cnm2.estimates.evaluate_components(images, cnm2.params, dview=dview)
+    try:
+        #context.cnm.estimates.evaluate_components(Yr_reshaped, paramsdict, dview=context.dview)
+        #context.cnm.params.set('quality',paramsdict)
+        context.cnm.estimates.filter_components(Yr_reshaped, context.cnm.params, new_dict=paramsdict, dview=context.dview)
+    except Exception as e:
+        print(e)
     print("A after filter: {}".format(context.cnm.estimates.A.shape))
     '''fr=fr_, decay_time=decay_time_, min_SNR=min_snr_, \
                 SNR_lowest=None, rval_thr=rval_thr_, rval_lowest=None, \
@@ -435,6 +453,7 @@ def filter_components(reset=False):
 @out.capture()
 def run_cnmf_ui(_):
     update_status("Running CNMF...")
+    print("Initializing CNMF parameters...")
     out.outputs = ()
     if context.working_cnmf_file in [None, [], '']:
         update_status("Error: Must press Load Files button before running CNMF.")
@@ -468,6 +487,7 @@ def run_cnmf_ui(_):
 
     params_dict = {'fnames': [context.working_cnmf_file],
                        'fr': fr_,
+                       'method_init': method_init,
                        'decay_time': decay_time_,
                        'rf': rf_,
                        'stride': stride_,
@@ -475,7 +495,19 @@ def run_cnmf_ui(_):
                        'gSig': gSig,
                        'merge_thr': merge_thr_,
                        'p': p_,
-                       'nb': gnb_}
+                       'nb': gnb_,
+                       'nb_patch':gnb_ if twophoton else 0,
+                       'method_deconvolution': 'oasis',
+                       'low_rank_background':None,
+                       'only_init': False if twophoton else True,
+                       'normalize_init':False,
+                       'ssub_B':2,
+                       'tsub':ds_temporal,
+                       'ssub': ds_spatial,
+                       'ring_size_factor' : 1.4,
+                       'center_psf': True,
+                       'border_px':0,
+                       }
 
     #Logging
     print("Starting CNMF...")
@@ -483,11 +515,11 @@ def run_cnmf_ui(_):
     print("Deconvolution: ON") if bool(deconv_flag_widget.value) else print("Deconvolution: OFF")
 
     opts = params.CNMFParams(params_dict=params_dict)
-   ##prepare file
-    filename=os.path.split(context.working_cnmf_file)[-1]
+    filename = os.path.split(context.working_cnmf_file)[-1]
     # =
     cnmf_file_ = context.working_cnmf_file
     cnmf_path_ = pathlib.Path(cnmf_file_)
+    #print("debug1")
     if cnmf_path_.suffix != '.mmap':
         try:
             print("Converting to .mmap format")
@@ -497,17 +529,21 @@ def run_cnmf_ui(_):
             context.working_cnmf_file = cnmf_file_
         except Exception as e:
             print("Error: Could not convert file to mmap: {}".format(e))
-
+    #print("debug2")
     Yr, dims, T = load_memmap(cnmf_file_)
-
+    #print("debug3")
     #bord_px_els = np.ceil(np.maximum(np.max(np.abs(mc.x_shifts_els)),
                                  #np.max(np.abs(mc.y_shifts_els)))).astype(np.int)
     #get correlation image
     context.YrDT = Yr, dims, T
     Yr = Yr.T.reshape((T,) + dims, order='F')
-   ###
-   #%% Now RUN CNMF (first time)
-    cnm = cnmf.CNMF(context.n_processes, params=opts, dview=context.dview)
+    #print("debug4")
+    ###
+    #%% Now RUN CNMF (first time)
+    try:
+        cnm = cnmf.CNMF(context.n_processes, params=opts, dview=context.dview) #context.n_processes,context.dview
+    except Exception as e:
+        print(e)
     print("CNM fit!")
     cnm = cnm.fit(Yr)
 
@@ -523,14 +559,16 @@ def run_cnmf_ui(_):
     cnm2.params.set('quality', {'min_SNR': min_snr_,
                                    'rval_thr': rval_thr_,
                                    'use_cnn': True,
-                                   'min_cnn_thr': cnn_thr_})
+                                   'min_cnn_thr': cnn_thr_,
+                                   'rval_lowest': 0.,
+                                   })
     cnm2.params.set('init', {'min_corr':min_corr, 'min_pnr':min_pnr,
                                     'ssub':ds_spatial, 'tsub':ds_temporal,'method_init':method_init
                                     })
     cnm2.estimates.evaluate_components(Yr, cnm2.params, dview=context.dview)
     save_movie_bool = bool(save_movie_widget.value)
     context.cnm = cnm2
-    context.cnm.estimates.idx_components = np.arange(context.cnm.estimates.A.shape[1])
+    #context.cnm.estimates.idx_components = np.arange(context.cnm.estimates.A.shape[1])
 
     fn = ''
     if save_movie_bool:
@@ -898,8 +936,9 @@ download_btn.on_click(download_data_func)
 #delete_roi_btn.on_click(delete_roi_func)
 is_edit_widget.observe(is_edit_changed, names='value')
 
-min_snr_event = min_snr_widget.observe(,names='value')
-min_corr_event = min_corr_widget.observe(,names='value')
+init_method_widget.observe(change_init_method,names='value')
+#min_snr_event = min_snr_widget.observe(,names='value')
+#min_corr_event = min_corr_widget.observe(,names='value')
 #min_snr_edit_widget.observe(update_btn_click, names='value')
 
 #cnn = cnnmin_edit_widget_.observe(update_btn_click, names='value')
@@ -950,7 +989,7 @@ def getYrDT():
     return Yr, dims, T
 
 #@out.capture()
-def view_cnmf_mov_click(_):
+'''def view_cnmf_mov_click(_):
     update_status("Launching movie")
     estimates = context.cnm.estimates
     A, C, b, f, YrA, sn, conv = estimates.A, estimates.C, estimates.b, \
@@ -959,6 +998,21 @@ def view_cnmf_mov_click(_):
     mag_val = validate_col_mag_slider.value
     cm.movie(np.reshape(A.tocsc()[:, context.cnm.estimates.idx_components].dot(
     C[context.cnm.estimates.idx_components]), dims + (-1,), order='F').transpose(2, 0, 1)).play(magnification=mag_val, gain=10.)
+    update_status("Idle")'''
+
+def view_cnmf_mov_click(_):
+    update_status("Launching movie")
+    """
+    cnm.estimates.play_movie(imgs, q_max=99.75, q_min=2, gain_res=1, magnification=1, \
+        include_bck=True, frame_range=slice(None, None, None), bpx=0, thr=0.0)
+    """
+    estimates = context.cnm.estimates
+    A, C, b, f, YrA, sn, conv = estimates.A, estimates.C, estimates.b, \
+                                estimates.f, estimates.YrA, estimates.sn, estimates.S#context.cnm.estimates
+    Yr, dims, T = getYrDT()
+    Y = Yr.T.reshape((T,) + dims, order='F')
+    mag_val = validate_col_mag_slider.value
+    estimates.play_movie(Y,magnification=mag_val,include_bck=False)
     update_status("Idle")
 
 def view_bgmov_click(_):
@@ -970,7 +1024,7 @@ def view_bgmov_click(_):
                                 estimates.f, estimates.YrA, estimates.sn, estimates.S
     mag_val = validate_col_mag_slider.value
     cm.movie(np.reshape(b.dot(f), dims + (-1,),
-                    order='F').transpose(2, 0, 1)).play(magnification=mag_val, gain=1.)#magnification=3, gain=1.
+                    order='F').transpose(2, 0, 1)).play(magnification=mag_val, gain=20.)#magnification=3, gain=1.
     update_status("Idle")
 
 def view_residual_click(_):
@@ -982,14 +1036,14 @@ def view_residual_click(_):
     Y = Yr.T.reshape((T,) + dims, order='F')
     mag_val = validate_col_mag_slider.value
     cm.movie(np.array(Y) - np.reshape(A.tocsc()[:, :].dot(C[:]) + b.dot(
-    f), dims + (-1,), order='F').transpose(2, 0, 1)).play(magnification=mag_val, gain=10., fr=10) #magnification=3, gain=10., fr=10
+    f), dims + (-1,), order='F').transpose(2, 0, 1)).play(magnification=mag_val, gain=20., fr=10) #magnification=3, gain=10., fr=10
     update_status("Idle")
 
 validate_col_cnmf_mov_btn.on_click(view_cnmf_mov_click)
 validate_col_bgmov_btn.on_click(view_bgmov_click)
 validate_col_residual_btn.on_click(view_residual_click)
-validate_col.children = [validate_col_mag_box, validate_col_cnmf_mov_btn, \
-validate_col_bgmov_btn, validate_col_residual_btn]
+validate_col.children = [validate_col_mag_box, validate_col_cnmf_mov_btn]#, \
+#validate_col_bgmov_btn, validate_col_residual_btn]
 
 def view_results_(_):
     #Yr_reshaped.reshape(np.prod(dims), T)
