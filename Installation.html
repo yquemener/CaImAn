@@ -1,11 +1,9 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta charset="utf-8" />
     <title>Installation &#8212; CaImAn 1.4 documentation</title>
     <link rel="stylesheet" href="_static/nature.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -48,26 +46,28 @@
 <h2>Installation on Windows<a class="headerlink" href="#installation-on-windows" title="Permalink to this headline">¶</a></h2>
 <details><p>The Windows installation process differs more widely from installation
 on Linux or MacOSX and has different issues you may run into.</p>
+</div>
 <div class="section" id="process">
-<h3>Process<a class="headerlink" href="#process" title="Permalink to this headline">¶</a></h3>
+<h2>Process<a class="headerlink" href="#process" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
-<li>Increase the maximum size of your pagefile to 64G or more
+<li><p>Increase the maximum size of your pagefile to 64G or more
 (<a class="reference external" href="http://www.tomshardware.com/faq/id-2864547/manage-virtual-memory-pagefile-windows.html">http://www.tomshardware.com/faq/id-2864547/manage-virtual-memory-pagefile-windows.html</a>
 ) - The Windows memmap interface is sensitive to the maximum setting
 and leaving it at the default can cause errors when processing larger
-datasets<ul>
-<li>Download and install Anaconda (Python 3.x)
+datasets</p>
+<ul>
+<li><p>Download and install Anaconda (Python 3.x)
 <a class="reference external" href="http://docs.continuum.io/anaconda/install">http://docs.continuum.io/anaconda/install</a>. Allow the installer to
-modify your PATH variable</li>
-<li>Use Conda to install git (With “conda install git”) - use of
+modify your PATH variable</p></li>
+<li><p>Use Conda to install git (With “conda install git”) - use of
 another commandline git is acceptable, but may lead to issues
-depending on default settings</li>
-<li>Install Microsoft Build Tools for Visual Studio 2017
+depending on default settings</p></li>
+<li><p>Install Microsoft Build Tools for Visual Studio 2017
 <a class="reference external" href="https://www.visualstudio.com/downloads/#build-tools-for-visual-studio-2017">https://www.visualstudio.com/downloads/#build-tools-for-visual-studio-2017</a>.
 Check the “Build Tools” box, and in the detailed view on the right
 check the “C/C++ CLI Tools” component too. The specifics of this
 occasionally change as Microsoft changes its products and website;
-you may need to go off-script.</li>
+you may need to go off-script.</p></li>
 </ul>
 </li>
 </ul>
@@ -75,10 +75,10 @@ you may need to go off-script.</li>
 start&gt;programs&gt;anaconda3&gt;anaconda prompt From that prompt. issue the
 following commands (if you wish to use the dev branch, you may switch
 branches after the clone):</p>
-<div class="code bash highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">flatironinstitute</span><span class="o">/</span><span class="n">CaImAn</span>
-<span class="n">cd</span> <span class="n">CaImAn</span>
-<span class="n">conda</span> <span class="n">env</span> <span class="n">create</span> <span class="o">-</span><span class="n">f</span> <span class="n">environment</span><span class="o">.</span><span class="n">yml</span> <span class="o">-</span><span class="n">n</span> <span class="n">caiman</span>
-<span class="n">conda</span> <span class="n">install</span> <span class="o">-</span><span class="n">n</span> <span class="n">caiman</span> <span class="n">vs2017_win</span><span class="o">-</span><span class="mi">64</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git clone https://github.com/flatironinstitute/CaImAn
+<span class="nb">cd</span> CaImAn
+conda env create -f environment.yml -n caiman
+conda install -n caiman vs2017_win-64
 </pre></div>
 </div>
 <p>At this point you will want to remove a startup script that visual
@@ -90,16 +90,16 @@ should show up. Delete the version that has
 conda:raw-latex:<cite>envs</cite>envs`:raw-latex:<cite>caiman</cite>,
 and edit it so KERAS_BACKEND is set to tensorflow rather than theano.
 You may then continue the installation.</p>
-<div class="code bash highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">activate</span> <span class="n">caiman</span>
-<span class="n">pip</span> <span class="n">install</span> <span class="o">.</span> <span class="p">(</span><span class="n">OR</span> <span class="n">pip</span> <span class="n">install</span> <span class="o">-</span><span class="n">e</span> <span class="o">.</span> <span class="k">if</span> <span class="n">you</span> <span class="n">want</span> <span class="n">to</span> <span class="n">develop</span> <span class="n">code</span><span class="p">)</span>
-<span class="n">copy</span> <span class="n">caimanmanager</span><span class="o">.</span><span class="n">py</span> <span class="o">..</span>
-<span class="n">conda</span> <span class="n">install</span> <span class="n">numba</span>
-<span class="n">cd</span> <span class="o">..</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>activate caiman
+pip install . <span class="o">(</span>OR pip install -e . <span class="k">if</span> you want to develop code<span class="o">)</span>
+copy caimanmanager.py ..
+conda install numba
+<span class="nb">cd</span> ..
 </pre></div>
 </div>
 </div>
 <div class="section" id="setting-up-a-data-directory-with-caimanmanager">
-<h3>Setting up a data directory with caimanmanager<a class="headerlink" href="#setting-up-a-data-directory-with-caimanmanager" title="Permalink to this headline">¶</a></h3>
+<h2>Setting up a data directory with caimanmanager<a class="headerlink" href="#setting-up-a-data-directory-with-caimanmanager" title="Permalink to this headline">¶</a></h2>
 <p>Now that you have stepped out of the caiman source directory, you are
 ready to make a data directory with code samples and datasets. You will
 not use the source tree directory any more.</p>
@@ -120,12 +120,12 @@ precious data) and doing a new data install as per above.</p>
 caimanmanager tool and other libraries will respect that.</p>
 </div>
 <div class="section" id="setting-up-environment-variables">
-<h3>Setting up environment variables<a class="headerlink" href="#setting-up-environment-variables" title="Permalink to this headline">¶</a></h3>
+<h2>Setting up environment variables<a class="headerlink" href="#setting-up-environment-variables" title="Permalink to this headline">¶</a></h2>
 <p>To make the package work <em>efficiently</em> and eliminate “crosstalk” between
 different processes, run these commands before launching Python:</p>
-<div class="code bash highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">set</span> <span class="n">MKL_NUM_THREADS</span><span class="o">=</span><span class="mi">1</span>
-<span class="nb">set</span> <span class="n">OPENBLAS_NUM_THREADS</span><span class="o">=</span><span class="mi">1</span>
-<span class="nb">set</span> <span class="n">KERAS_BACKEND</span><span class="o">=</span><span class="n">tensorflow</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">set</span> <span class="nv">MKL_NUM_THREADS</span><span class="o">=</span><span class="m">1</span>
+<span class="nb">set</span> <span class="nv">OPENBLAS_NUM_THREADS</span><span class="o">=</span><span class="m">1</span>
+<span class="nb">set</span> <span class="nv">KERAS_BACKEND</span><span class="o">=</span>tensorflow
 </pre></div>
 </div>
 <p>The commands should be run every time you enter the caiman conda
@@ -134,21 +134,20 @@ so you do not have to repeat this process every time. You can do this by
 following the instructions
 <a class="reference external" href="https://conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#saving-environment-variables">here</a>.</p>
 </details></div>
-</div>
 <div class="section" id="installation-on-macos-and-linux">
 <h2>Installation on MacOS and Linux<a class="headerlink" href="#installation-on-macos-and-linux" title="Permalink to this headline">¶</a></h2>
-<details><div class="code bash highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">flatironinstitute</span><span class="o">/</span><span class="n">CaImAn</span>
-<span class="n">cd</span> <span class="n">CaImAn</span><span class="o">/</span>
-<span class="n">conda</span> <span class="n">env</span> <span class="n">create</span> <span class="o">-</span><span class="n">f</span> <span class="n">environment</span><span class="o">.</span><span class="n">yml</span> <span class="o">-</span><span class="n">n</span> <span class="n">caiman</span>
-<span class="n">source</span> <span class="n">activate</span> <span class="n">caiman</span>
-<span class="n">pip</span> <span class="n">install</span> <span class="o">.</span>
+<details><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git clone https://github.com/flatironinstitute/CaImAn
+<span class="nb">cd</span> CaImAn/
+conda env create -f environment.yml -n caiman
+<span class="nb">source</span> activate caiman
+pip install .
 </pre></div>
 </div>
 <p>If you want to develop code then replace the last command with
 <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">-e</span> <span class="pre">.</span></code> If any of these steps gives you errors do not
 proceed to the following step without resolving it</p>
 <div class="section" id="known-issues">
-<h3>Known issues<a class="headerlink" href="#known-issues" title="Permalink to this headline">¶</a></h3>
+<h3>known issues<a class="headerlink" href="#known-issues" title="Permalink to this headline">¶</a></h3>
 <p>If you recently upgraded to OSX Mojave you may need to perform the
 following steps before your first install:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">xcode</span><span class="o">-</span><span class="n">select</span> <span class="o">--</span><span class="n">install</span>
@@ -157,14 +156,15 @@ following steps before your first install:</p>
 </div>
 <p>and install the package file you will find in the folder that pops up</p>
 </div>
+</div>
 <div class="section" id="setting-up-environment-variables-1">
-<span id="id1"></span><h3>Setting up environment variables<a class="headerlink" href="#setting-up-environment-variables-1" title="Permalink to this headline">¶</a></h3>
+<span id="id1"></span><h2>Setting up environment variables<a class="headerlink" href="#setting-up-environment-variables-1" title="Permalink to this headline">¶</a></h2>
 <p>To make the package work <em>efficiently</em> and eliminate “crosstalk” between
 different processes, run these commands before launching Python (this is
 for Linux and OSX):</p>
-<div class="code bash highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">export</span> <span class="n">MKL_NUM_THREADS</span><span class="o">=</span><span class="mi">1</span>
-<span class="n">export</span> <span class="n">OPENBLAS_NUM_THREADS</span><span class="o">=</span><span class="mi">1</span>
-<span class="n">export</span> <span class="n">KERAS_BACKEND</span><span class="o">=</span><span class="n">tensorflow</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span> <span class="nv">MKL_NUM_THREADS</span><span class="o">=</span><span class="m">1</span>
+<span class="nb">export</span> <span class="nv">OPENBLAS_NUM_THREADS</span><span class="o">=</span><span class="m">1</span>
+<span class="nb">export</span> <span class="nv">KERAS_BACKEND</span><span class="o">=</span>tensorflow
 </pre></div>
 </div>
 <p>The commands should be run every time before launching python. It is
@@ -174,7 +174,7 @@ following the instructions
 <a class="reference external" href="https://conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#saving-environment-variables">here</a>.</p>
 </div>
 <div class="section" id="setting-up-caimanmanager">
-<h3>Setting up caimanmanager<a class="headerlink" href="#setting-up-caimanmanager" title="Permalink to this headline">¶</a></h3>
+<h2>Setting up caimanmanager<a class="headerlink" href="#setting-up-caimanmanager" title="Permalink to this headline">¶</a></h2>
 <p>Once CaImAn is installed, you may want to get a working directory with
 code samples and datasets; pip installed a caimanmanager.py command that
 manages this. If you have not installed Caiman before, you can do
@@ -194,7 +194,7 @@ caimanmanager tool and other libraries will respect that.</p>
 </details></div>
 </div>
 <div class="section" id="upgrading">
-<h2>Upgrading<a class="headerlink" href="#upgrading" title="Permalink to this headline">¶</a></h2>
+<h1>Upgrading<a class="headerlink" href="#upgrading" title="Permalink to this headline">¶</a></h1>
 <p>If you already have CaImAn installed with the pip installer (May 2018 or
 later), but want to upgrade, please follow the procedure below. If you
 reinstall CaImAn frequently, you can try skip deleting and recreating
@@ -203,31 +203,31 @@ below to update the code. However, if the environment file has changed
 since your last update this may lead to you not the latest version.</p>
 <p>From the conda environment you used to install CaImAn:</p>
 <ol class="arabic simple">
-<li><code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">uninstall</span> <span class="pre">caiman</span></code></li>
-<li>remove or rename your ~/caiman_data directory</li>
-<li>Remove your conda environment: <code class="docutils literal notranslate"><span class="pre">conda</span> <span class="pre">env</span> <span class="pre">remove</span> <span class="pre">-n</span> <span class="pre">NAME_OF_YOUR_ENVIRONMENT</span></code></li>
-<li>Close and reopen your shell (to clear out the old conda environment)</li>
-<li>Do a <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">pull</span></code> from inside your CaImAn folder.</li>
-<li>Recreate and reenter your conda environment as you did in the installation instructions</li>
-<li>Do a <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">.</span></code> inside that code checkout</li>
-<li>Run <code class="docutils literal notranslate"><span class="pre">caimanmanager.py</span> <span class="pre">install</span></code> to reinstall the data directory (use <code class="docutils literal notranslate"><span class="pre">--inplace</span></code> if you used the <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">-e</span> <span class="pre">.</span></code> during your initial installation).</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">uninstall</span> <span class="pre">caiman</span></code></p></li>
+<li><p>remove or rename your ~/caiman_data directory</p></li>
+<li><p>Remove your conda environment: <code class="docutils literal notranslate"><span class="pre">conda</span> <span class="pre">env</span> <span class="pre">remove</span> <span class="pre">-n</span> <span class="pre">NAME_OF_YOUR_ENVIRONMENT</span></code></p></li>
+<li><p>Close and reopen your shell (to clear out the old conda environment)</p></li>
+<li><p>Do a <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">pull</span></code> from inside your CaImAn folder.</p></li>
+<li><p>Recreate and reenter your conda environment as you did in the installation instructions</p></li>
+<li><p>Do a <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">.</span></code> inside that code checkout</p></li>
+<li><p>Run <code class="docutils literal notranslate"><span class="pre">caimanmanager.py</span> <span class="pre">install</span></code> to reinstall the data directory (use <code class="docutils literal notranslate"><span class="pre">--inplace</span></code> if you used the <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">-e</span> <span class="pre">.</span></code> during your initial installation).</p></li>
 </ol>
 <ul class="simple">
-<li>If you used the <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">-e</span> <span class="pre">.</span></code> option when installing, then you
+<li><p>If you used the <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">-e</span> <span class="pre">.</span></code> option when installing, then you
 can try updating by simply doing a <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">pull</span></code>. Again, this might
 not lead to the latest version of the code if the environment
-variables have changed.</li>
-<li>The same applies if you want to modify some internal function of
+variables have changed.</p></li>
+<li><p>The same applies if you want to modify some internal function of
 CaImAn. If you used the <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">-e</span> <span class="pre">.</span></code> option then you can
 directly modify it (that’s why it’s called developer mode). If you
 used the <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">.</span></code> option then you will need to
 <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">uninstall</span> <span class="pre">caiman</span></code> followed by <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">.</span></code> for your
 changes to take effect. Depending on the functions you’re changing so
-you might be able to skip this step.</li>
+you might be able to skip this step.</p></li>
 </ul>
 </div>
 <div class="section" id="installing-additional-packages">
-<h2>Installing additional packages<a class="headerlink" href="#installing-additional-packages" title="Permalink to this headline">¶</a></h2>
+<h1>Installing additional packages<a class="headerlink" href="#installing-additional-packages" title="Permalink to this headline">¶</a></h1>
 <p>CaImAn uses the conda-forge conda channel for installing its required
 packages. If you want to install new packages into your conda
 environment for CaImAn, it is important that you not mix conda-forge and
@@ -241,8 +241,7 @@ environment) as follows:</p>
 their listing, that they’re from conda-forge, with none of them having a
 blank origin. If you fail to do this, differences between how packages
 are built in conda-forge versus the default conda channels may mean that
-some packages (e.g.&nbsp;OpenCV) stop working despite showing as installed.</p>
-</div>
+some packages (e.g. OpenCV) stop working despite showing as installed.</p>
 </div>
 
 
@@ -254,22 +253,20 @@ some packages (e.g.&nbsp;OpenCV) stop working despite showing as installed.</p>
   <h3><a href="index.html">Table of Contents</a></h3>
   <ul>
 <li><a class="reference internal" href="#">Installation</a><ul>
-<li><a class="reference internal" href="#installation-on-windows">Installation on Windows</a><ul>
+<li><a class="reference internal" href="#installation-on-windows">Installation on Windows</a></li>
 <li><a class="reference internal" href="#process">Process</a></li>
 <li><a class="reference internal" href="#setting-up-a-data-directory-with-caimanmanager">Setting up a data directory with caimanmanager</a></li>
 <li><a class="reference internal" href="#setting-up-environment-variables">Setting up environment variables</a></li>
+<li><a class="reference internal" href="#installation-on-macos-and-linux">Installation on MacOS and Linux</a><ul>
+<li><a class="reference internal" href="#known-issues">known issues</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#installation-on-macos-and-linux">Installation on MacOS and Linux</a><ul>
-<li><a class="reference internal" href="#known-issues">Known issues</a></li>
 <li><a class="reference internal" href="#setting-up-environment-variables-1">Setting up environment variables</a></li>
 <li><a class="reference internal" href="#setting-up-caimanmanager">Setting up caimanmanager</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#upgrading">Upgrading</a></li>
 <li><a class="reference internal" href="#installing-additional-packages">Installing additional packages</a></li>
-</ul>
-</li>
 </ul>
 
   <h4>Previous topic</h4>
@@ -286,13 +283,11 @@ some packages (e.g.&nbsp;OpenCV) stop working despite showing as installed.</p>
     </ul>
    </div>
 <div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
+  <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" />
+      <input type="text" name="q" aria-labelledby="searchlabel" />
       <input type="submit" value="Go" />
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
     </form>
     </div>
 </div>
@@ -318,7 +313,7 @@ some packages (e.g.&nbsp;OpenCV) stop working despite showing as installed.</p>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2019, Flatiron Institute, Simons Foundation, New York, NY.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.4.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.0.
     </div>
   </body>
 </html>
