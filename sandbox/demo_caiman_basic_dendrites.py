@@ -43,6 +43,7 @@ import caiman as cm
 from caiman.components_evaluation import estimate_components_quality_auto
 from caiman.source_extraction.cnmf import cnmf as cnmf
 from caiman.paths import caiman_datadir
+from caiman.summary_images import local_correlations_movie_offline
 #%% start a cluster
 try:
     dview.terminate()
@@ -54,25 +55,28 @@ c, dview, n_processes =\
 
 
 #%% save files to be processed
-# This datafile is distributed with Caiman
-#fnames = ['/Users/agiovann/Dropbox (Simons Foundation)/ImagingData/DataCalciumImaging/purkinje_out/corrected_movies/M_FLUO_1.tif']
-#fname_new  = '/Users/agiovann/example_movies_ALL/memmap__d1_131_d2_131_d3_1_order_C_frames_2991_.mmap'
-#fnames = ['/Users/agiovann/example_movies_ALL/2014-04-05-003.tif']
+# RAW DATA
+fnames = ['/home/andrea/Dropbox/NEL/DendriticData/M_FLUO_1.tif']
+#fnames  = '/home/andrea/Dropbox/NEL/DendriticData/memmap__d1_131_d2_131_d3_1_order_C_frames_2991_.mmap'
+fnames = ['/home/andrea/Dropbox/NEL/DendriticData/2014-04-05-003.tif']
+#fnames = ['/home/andrea/Dropbox/NEL/DendriticData/quietBlock_1_ds_5.hdf5']
+fnames = ['/home/andrea/Dropbox/NEL/DendriticData/495D2G_MC_crop.tif']
+fnames = ['/home/andrea/Dropbox/NEL/DendriticData/495D2G_MC_ds_4_400_400.hdf5']
+fnames = ['/home/andrea/Dropbox/NEL/DendriticData/activeBlock.hdf5']
+fnames = ['/home/andrea/Dropbox/NEL/DendriticData/quietBlock.hdf5']
 
-#fnames = ['/Users/agiovann/example_movies_ALL/quietBlock_1_ds_5.hdf5']
-#fnames = ['/mnt/ceph/neuro/Tolias/quietBlock_2_ds_2_2.hdf5']
-#fnames=['/Users/agiovann/example_movies_ALL/2014-04-05-003_sparse.tif']
-fnames = ['/mnt/ceph/users/agiovann/ImagingData/Basu/495D2G_MC.hdf5']
-fnames = ['/mnt/ceph/users/agiovann/ImagingData/Basu/495D2G_MC_ds_4_400_400.hdf5']
+# DATA AFTER LOCAL CORRELATION
 #fnames = ['/mnt/ceph/users/agiovann/ImagingData/Basu/495D2G_MC_ds_4_400_400_sparse.hdf5']
-fnames = ['/mnt/ceph/users/agiovann/ImagingData/Basu/495D2G_MC_crop.tif']
-fnames = ['/mnt/ceph/users/agiovann/ImagingData/Basu/495D2G_MC_ds_4_400_400_sparse_-2.hdf5']
-fnames = ['/mnt/ceph/users/agiovann/ImagingData/Basu/495D2G_MC_ds_4_400_400_sparse_1.hdf5']
+fnames = ['/home/andrea/Dropbox/NEL/DendriticData/quietBlock_2_ds_2_2.hdf5']
+fnames = ['/home/andrea/Dropbox/NEL/DendriticData/495D2G_MC_ds_4_400_400_sparse_-2.hdf5']
+fnames = ['/home/andrea/Dropbox/NEL/DendriticData/495D2G_MC_ds_4_400_400_sparse_1.hdf5']
+fnames = ['/home/andrea/Dropbox/NEL/DendriticData/495D2G_MC.hdf5']
+
 
 #%%
 if False:
     m = cm.load(fnames)
-    img = m.local_correlations_movie(file_name=fnames[0],dview=dview,swap_dim=False, window=100, order_mean = -2).astype(np.float32)
+    img = local_correlations_movie_offline(file_name=fnames[0],dview=dview,swap_dim=False, window=100, order_mean = -2).astype(np.float32)
 #    img[np.isnan(img)]=0
 #    img[img>1]=1
 #    img=img*(img>0)

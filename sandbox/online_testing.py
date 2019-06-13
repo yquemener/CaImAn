@@ -50,10 +50,8 @@ def remove_baseline_fast(traces, bl_percentile=8):
         return traces.astype(np.float32)
 #%%
 from scipy.stats import norm
-#a = cm.load('example_movies/demoMovie.tif')
-#a = cm.load('/mnt/ceph/neuro/labeling/yuste.Single_150u/images/tifs/Single_150um_024.tif')
-#a = cm.load('/Users/agiovann/example_movies_ALL/quietBlock_2_ds_2_2.hdf5')
-a = cm.load('/mnt/ceph/neuro/labeling/yuste.Single_150u/images/tifs/Yr_d1_200_d2_256_d3_1_order_C_frames_3000_.mmap')
+a = cm.load('/home/andrea/Dropbox/NEL/DendriticData/quietBlock_2_ds_2_2.hdf5')
+a = cm.load('/home/andrea/Dropbox/NEL/DendriticData/Yr_d1_200_d2_256_d3_1_order_C_frames_3000_.mmap')
 
 all_els = []
 for it in range(1):
