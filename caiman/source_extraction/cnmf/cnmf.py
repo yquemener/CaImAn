@@ -649,7 +649,7 @@ class CNMF(object):
                 logging.info("update temporal")
                 self.update_temporal(Yr, use_init=False)
 
-        self.estimates.normalize_components()
+        #self.estimates.normalize_components()
         return self
 
 

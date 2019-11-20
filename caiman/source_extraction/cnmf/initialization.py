@@ -836,9 +836,13 @@ def greedyROI(Y, nr=30, gSig=[5, 5], gSiz=[11, 11], nIter=5, kernel=None, nb=1,
     res = np.reshape(Y, (np.prod(d[0:-1]), d[-1]),
                      order='F') + med.flatten(order='F')[:, None]
 #    model = NMF(n_components=nb, init='random', random_state=0)
-    model = NMF(n_components=nb, init='nndsvdar')
-    b_in = model.fit_transform(np.maximum(res, 0)).astype(np.float32)
-    f_in = model.components_.astype(np.float32)
+    if nb > 0:
+        model = NMF(n_components=nb, init='nndsvdar')
+        b_in = model.fit_transform(np.maximum(res, 0)).astype(np.float32)
+        f_in = model.components_.astype(np.float32)
+    else:
+        b_in = np.zeros((res.shape[0], 1))
+        f_in = np.zeros((1, res.shape[1]))
 
     return A, C, center, b_in, f_in
 
