@@ -8,7 +8,7 @@ ipykernel
 ipython
 ipyparallel
 jupyter
-keras
+keras==2.1.0
 matplotlib
 mypy
 numpy
@@ -22,7 +22,7 @@ pyqtgraph
 scikit-image
 scikit-learn
 scipy
-tensorflow
+tensorflow==1.13.1
 tifffile
 tk
 tqdm

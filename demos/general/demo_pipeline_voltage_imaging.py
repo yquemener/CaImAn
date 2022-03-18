@@ -57,7 +57,7 @@ def main():
     fnames = download_demo('demo_voltage_imaging.hdf5', 'volpy')  # file path to movie file (will download if not present)
     path_ROIs = download_demo('demo_voltage_imaging_ROIs.hdf5', 'volpy')  # file path to ROIs file (will download if not present)
     file_dir = os.path.split(fnames)[0]
-    
+
 #%% dataset dependent parameters
     # dataset dependent parameters
     fr = 400                                        # sample rate of the movie
@@ -163,7 +163,8 @@ def main():
                     'maskrcnn',                # Mask R-CNN is a convolutional neural network trained for detecting neurons in summary images
                     'gui_annotation']          # use VolPy GUI to correct outputs of Mask R-CNN or annotate new datasets 
                     
-    method = methods_list[0]
+    # method = methods_list[0]
+    method = methods_list[1]
     if method == 'manual_annotation':                
         with h5py.File(path_ROIs, 'r') as fl:
             ROIs = fl['mov'][()]  
