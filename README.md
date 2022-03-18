@@ -31,9 +31,12 @@ The supported ways to install CaImAn use the Anaconda python distribution. If yo
 
 We strongly recommend installing the mamba package into your base environment, with 'conda install -c conda-forge mamba', using it to build your conda environment. Mamba performs the same environment creation tasks that the base conda tool does, but far faster. In the instructions below, we assume you're using mamba, but if you're not, you can run the same commands with the conda tool instead.
 
-This fork only supports installation from sourcesi (only tested on Linux):
+This fork only supports installation from sources (only tested on Linux):
 
-Clone the sources of this repo, create an environment with all the prereqs with 'mamba env create -n caiman -f environment.yml', activate the environment, and then do a 'pip install -e .'
+- Clone the sources of this repo
+- Create an environment with all the prereqs with 'mamba env create -n caiman -f environment.yml'
+- Activate the environment with `conda activate caiman`
+- Install pre-requisite modules with 'pip install -e .'
 
 There are other ways to build/use caiman, but they may get less or no support depending on how different they are.
 
